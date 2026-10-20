@@ -1,5 +1,5 @@
 @font-face{font-family:Doto;src:url('doto-variable.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
-:root{color-scheme:dark;--accent:#63ffc1;--rgb:99,255,193;--wallpaper:url('matrix-wallpaper-clean.png');--ink:#ecfff6;--sub:rgba(236,255,246,.68);--faint:rgba(236,255,246,.42);--glass:rgba(6,16,15,.76);--font:'Doto','Bahnschrift','Segoe UI',sans-serif;--ui-scale:1}
+:root{color-scheme:dark;--accent:#63ffc1;--rgb:99,255,193;--wallpaper:url('matrix-wallpaper-starless.png');--ink:#ecfff6;--sub:rgba(236,255,246,.68);--faint:rgba(236,255,246,.42);--glass:rgba(6,16,15,.76);--font:'Doto','Bahnschrift','Segoe UI',sans-serif;--ui-scale:1}
 :root[data-theme=amber]{--accent:#ff7a32;--rgb:255,122,50;--ink:#fff2e4;--sub:rgba(255,242,228,.68);--faint:rgba(255,242,228,.42)}
 :root[data-theme=ice]{--accent:#edf8ff;--rgb:237,248,255;--ink:#fff;--sub:rgba(245,250,255,.72);--faint:rgba(245,250,255,.44)}
 :root[data-theme=matrix]{--accent:#00ff6a;--rgb:0,255,106;--ink:#eaffef;--sub:rgba(234,255,239,.68);--faint:rgba(234,255,239,.42)}

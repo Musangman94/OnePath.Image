@@ -649,7 +649,7 @@
   };
   landscapeImage.addEventListener('load',renderLandscape);
   landscapeImage.addEventListener('error',()=>{ $('#wallpaperFallback').hidden=false; });
-  landscapeImage.src='assets/matrix-wallpaper-clean.png';
+  landscapeImage.src='assets/matrix-wallpaper-starless.png';
   let landscapeResizeTimer;
   window.addEventListener('resize',()=> { clearTimeout(landscapeResizeTimer); landscapeResizeTimer=setTimeout(renderLandscape,90); });
 
