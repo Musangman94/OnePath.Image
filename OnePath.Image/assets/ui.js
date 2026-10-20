@@ -319,6 +319,7 @@
   setExecutionMode(executionMode, false);
 
   const updateOffload = () => {
+    $('#rain').hidden = !selectedAgent;
     if (!selectedAgent) $$('.agent').forEach(button => { button.classList.remove('active'); button.setAttribute('aria-pressed','false'); });
     $('#offloadModel').disabled = !selectedAgent;
     $('#offloadModel').setAttribute('aria-label', selectedAgent ? `Offload ${selectedAgent} model` : 'No model selected');
@@ -882,6 +883,7 @@
   };
   const drawRain = (now) => {
     rainFrame = requestAnimationFrame(drawRain);
+    if (!selectedAgent) { rainLast = now; rainDirty = true; return; }
     const frozen = root.classList.contains('no-motion');
     if (document.hidden || (frozen && !rainDirty)) { rainLast = now; return; }
     const dt = frozen ? 0 : Math.min((now - rainLast) / 1000 || 0, .04);
