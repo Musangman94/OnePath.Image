@@ -653,13 +653,6 @@
   let landscapeResizeTimer;
   window.addEventListener('resize',()=> { clearTimeout(landscapeResizeTimer); landscapeResizeTimer=setTimeout(renderLandscape,90); });
 
-  // Keep the distant sky field around the scene, but clear particles underneath the large foreground portrait.
-  const underPortrait = (x, y, width = innerWidth, height = innerHeight) => {
-    const dx = (x - width * .5) / (width * .49);
-    const dy = (y - height * .28) / (height * .36);
-    return dx * dx + dy * dy <= 1;
-  };
-
   const starCanvas = $('#stars');
   const starCtx = starCanvas.getContext('2d', { alpha: true });
   let stars = [];
@@ -711,7 +704,6 @@
     }
     starCtx.clearRect(0, 0, starWidth, starHeight);
     for (const star of stars) {
-      if (underPortrait(star.x, star.y, starWidth, starHeight)) continue;
       if (!frozen) star.flare = Math.max(0, star.flare - dt);
       const progress = 1 - star.flare / star.flareDuration;
       const glint = star.flare > 0 ? Math.pow(Math.sin(Math.PI * progress), 2) * star.flareStrength : 0;
@@ -773,7 +765,6 @@
       for (let index = 0; index < column.length; index += 1) {
         const y = column.y - index * column.gap;
         if (y < -18 || y > rainHeight + 18) continue;
-        if (underPortrait(column.x, y, rainWidth, rainHeight)) continue;
         rainCtx.globalAlpha = index === 0 ? .98 : Math.max(.08, .75 * (1 - index / column.length));
         rainCtx.fillStyle = index === 0 ? '#eafff3' : index === 1 ? '#8dffaf' : '#00e85b';
         rainCtx.shadowColor = index === 0 ? '#eafff3' : '#00ff66'; rainCtx.shadowBlur = index === 0 ? 18 : 7;
