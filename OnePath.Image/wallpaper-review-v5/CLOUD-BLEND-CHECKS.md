@@ -17,3 +17,5 @@ The blend band uses the visible artwork's lower edge rather than the image box. 
 [Raw coverage results](blend/checks.json). [Shared transparent cloud texture](blend/constellation-cloud-blend.png).
 
 These checks verify overlap and translucency. Final fog strength and artistic preference remain a visual judgment; the screenshots in the gallery show the final composite.
+
+The overlap checks were repeated after unifying terrain/cloud overscan to 1.12× and adding delayed cloud movement. Cloud alpha was sampled using its actual scaled placement. See [movement checks](MOTION-CHECKS.md).

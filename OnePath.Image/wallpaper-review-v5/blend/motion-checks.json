@@ -1,0 +1,146 @@
+[
+  {
+    "name": "original",
+    "responseRatio": 1.1,
+    "moving": {
+      "x": 0.19863,
+      "y": 0.19178,
+      "bx": 0.18281,
+      "by": 0.1765
+    },
+    "end": {
+      "x": 0.80556,
+      "y": 0.77778,
+      "bx": 0.80556,
+      "by": 0.77778
+    },
+    "geometry": {
+      "terrainScale": "1.12",
+      "fogScale": "1.12",
+      "terrainTranslate": "-46.4003px -28.0001px",
+      "fogTranslate": "-46.4003px -28.0001px",
+      "origin": "720px 450px",
+      "fogOrigin": "50% 50%"
+    }
+  },
+  {
+    "name": "desert",
+    "responseRatio": 1.1,
+    "moving": {
+      "x": 0.18695,
+      "y": 0.1805,
+      "bx": 0.17192,
+      "by": 0.16599
+    },
+    "end": {
+      "x": 0.80556,
+      "y": 0.77778,
+      "bx": 0.80556,
+      "by": 0.77778
+    },
+    "geometry": {
+      "terrainScale": "1.12",
+      "fogScale": "1.12",
+      "terrainTranslate": "-46.4003px -28.0001px",
+      "fogTranslate": "-46.4003px -28.0001px",
+      "origin": "720px 450px",
+      "fogOrigin": "720px 450px"
+    }
+  },
+  {
+    "name": "city",
+    "responseRatio": 1.1,
+    "moving": {
+      "x": 0.1992,
+      "y": 0.19233,
+      "bx": 0.18334,
+      "by": 0.17701
+    },
+    "end": {
+      "x": 0.80556,
+      "y": 0.77778,
+      "bx": 0.80556,
+      "by": 0.77778
+    },
+    "geometry": {
+      "terrainScale": "1.12",
+      "fogScale": "1.12",
+      "terrainTranslate": "-46.4003px -28.0001px",
+      "fogTranslate": "-46.4003px -28.0001px",
+      "origin": "720px 450px",
+      "fogOrigin": "720px 450px"
+    }
+  },
+  {
+    "name": "temple",
+    "responseRatio": 1.1,
+    "moving": {
+      "x": 0.1059,
+      "y": 0.10224,
+      "bx": 0.09687,
+      "by": 0.09353
+    },
+    "end": {
+      "x": 0.80556,
+      "y": 0.77778,
+      "bx": 0.80556,
+      "by": 0.77778
+    },
+    "geometry": {
+      "terrainScale": "1.12",
+      "fogScale": "1.12",
+      "terrainTranslate": "-46.4003px -28.0001px",
+      "fogTranslate": "-46.4003px -28.0001px",
+      "origin": "720px 450px",
+      "fogOrigin": "720px 450px"
+    }
+  },
+  {
+    "name": "ice",
+    "responseRatio": 1.1,
+    "moving": {
+      "x": 0.19215,
+      "y": 0.18552,
+      "bx": 0.17676,
+      "by": 0.17067
+    },
+    "end": {
+      "x": 0.80556,
+      "y": 0.77778,
+      "bx": 0.80556,
+      "by": 0.77778
+    },
+    "geometry": {
+      "terrainScale": "1.12",
+      "fogScale": "1.12",
+      "terrainTranslate": "-46.4003px -28.0001px",
+      "fogTranslate": "-46.4003px -28.0001px",
+      "origin": "720px 450px",
+      "fogOrigin": "720px 450px"
+    }
+  },
+  {
+    "name": "orbital",
+    "responseRatio": 1.1,
+    "moving": {
+      "x": 0.18462,
+      "y": 0.17826,
+      "bx": 0.16976,
+      "by": 0.1639
+    },
+    "end": {
+      "x": 0.80556,
+      "y": 0.77778,
+      "bx": 0.80556,
+      "by": 0.77778
+    },
+    "geometry": {
+      "terrainScale": "1.12",
+      "fogScale": "1.12",
+      "terrainTranslate": "-46.4003px -28.0001px",
+      "fogTranslate": "-46.4003px -28.0001px",
+      "origin": "720px 450px",
+      "fogOrigin": "720px 450px"
+    }
+  }
+]

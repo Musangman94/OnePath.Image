@@ -622,22 +622,44 @@
   const landscapeCanvas = $('#cloudLandscape');
   // Screen centre is neutral. Keep pointer depth separate from model-switch transforms.
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
-  const parallax = { x: 0, y: 0, targetX: 0, targetY: 0, frame: 0, last: 0 };
+  const parallax = { x: 0, y: 0, blendX: 0, blendY: 0, targetX: 0, targetY: 0, frame: 0, last: 0 };
+  const landscapeResponse = .32;
+  const blendResponse = landscapeResponse * 1.1;
+  const paintParallax = () => {
+    const scene = $('#sceneEffects');
+    scene.style.setProperty('--parallax-x', parallax.x.toFixed(5));
+    scene.style.setProperty('--parallax-y', parallax.y.toFixed(5));
+    scene.style.setProperty('--blend-parallax-x', parallax.blendX.toFixed(5));
+    scene.style.setProperty('--blend-parallax-y', parallax.blendY.toFixed(5));
+  };
   const parallaxEnabled = () => finePointer.matches && !reducedMotion.matches && !root.classList.contains('no-motion');
   const drawParallax = (now) => {
     const dt = Math.min((now - parallax.last) / 1000 || 1 / 60, .05);
     parallax.last = now;
-    const ease = 1 - Math.exp(-dt / .32);
+    const ease = 1 - Math.exp(-dt / landscapeResponse);
+    const blendEase = 1 - Math.exp(-dt / blendResponse);
     parallax.x += (parallax.targetX - parallax.x) * ease;
     parallax.y += (parallax.targetY - parallax.y) * ease;
-    const settled = Math.abs(parallax.targetX - parallax.x) < .0001 && Math.abs(parallax.targetY - parallax.y) < .0001;
-    if (settled) { parallax.x = parallax.targetX; parallax.y = parallax.targetY; }
-    $('#sceneEffects').style.setProperty('--parallax-x', parallax.x.toFixed(5));
-    $('#sceneEffects').style.setProperty('--parallax-y', parallax.y.toFixed(5));
+    parallax.blendX += (parallax.targetX - parallax.blendX) * blendEase;
+    parallax.blendY += (parallax.targetY - parallax.blendY) * blendEase;
+    const settled = Math.abs(parallax.targetX - parallax.x) < .0001 && Math.abs(parallax.targetY - parallax.y) < .0001
+      && Math.abs(parallax.targetX - parallax.blendX) < .0001 && Math.abs(parallax.targetY - parallax.blendY) < .0001;
+    if (settled) {
+      parallax.x = parallax.blendX = parallax.targetX;
+      parallax.y = parallax.blendY = parallax.targetY;
+    }
+    paintParallax();
     parallax.frame = settled ? 0 : requestAnimationFrame(drawParallax);
   };
   const setParallaxTarget = (x = 0, y = 0) => {
     parallax.targetX = x; parallax.targetY = y;
+    if (!parallaxEnabled()) {
+      cancelAnimationFrame(parallax.frame); parallax.frame = 0;
+      parallax.x = parallax.y = parallax.blendX = parallax.blendY = 0;
+      parallax.targetX = parallax.targetY = 0;
+      paintParallax();
+      return;
+    }
     if (!parallax.frame && !document.hidden) {
       parallax.last = performance.now();
       parallax.frame = requestAnimationFrame(drawParallax);

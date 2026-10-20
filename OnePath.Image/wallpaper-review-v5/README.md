@@ -38,3 +38,5 @@ Native generated dimensions are listed below. These are not 4K exports. PNG alph
 
 ![05-cloudport](05-cloudport.png)
 
+
+[Wallpaper dimensions and synchronized movement checks](MOTION-CHECKS.md). The cloud response is now 10% slower, with the same final displacement as the landscape.
