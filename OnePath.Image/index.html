@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#06100f">
   <title>OnePath.Image — Desktop concept</title>
   <link rel="preload" href="assets/doto-variable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="assets/ui.css">
+  <link rel="stylesheet" href="assets/ui.css?v=wallpapers-1">
   <script defer src="assets/navi-frames.js"></script>
-  <script defer src="assets/ui.js"></script>
+  <script defer src="assets/ui.js?v=wallpapers-1"></script>
 </head>
 <body>
   <div class="scene-effects" id="sceneEffects" aria-hidden="true">
@@ -73,6 +73,11 @@
       <button class="swatch" data-theme="amber" aria-pressed="false"><i class="hot-metal" style="--swatch:#ff6a1a"></i>Hot metal</button>
       <button class="swatch" data-theme="ice" aria-pressed="false"><i style="--swatch:#edf8ff"></i>Ice</button>
       <button class="swatch" data-theme="matrix" aria-pressed="false"><i style="--swatch:#00ff6a"></i>Matrix</button>
+    </div>
+    <div class="wallpaper-settings">
+      <p class="panel-label" id="wallpaperLabel">LANDSCAPE</p>
+      <div class="wallpaper-choices" id="wallpaperChoices" role="group" aria-labelledby="wallpaperLabel"></div>
+      <p class="wallpaper-status" id="wallpaperStatus" role="status" aria-live="polite"></p>
     </div>
     <label class="scale-control" for="scaleSlider"><span>Interface scale <output id="scaleValue">100%</output></span><input id="scaleSlider" type="range" min="80" max="120" value="100" aria-label="Interface scale"></label>
     <div class="display-options"><button id="clockFormatSetting" aria-pressed="false" title="Switch between 12 and 24 hour time">24H clock</button><button id="crtToggle" aria-pressed="false">▤ CRT off</button><button id="motionToggle" aria-pressed="false">◌ <span id="motionText">Motion on</span></button></div>

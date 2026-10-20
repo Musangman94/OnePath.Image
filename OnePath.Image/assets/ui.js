@@ -32,6 +32,16 @@
     }
   };
 
+  const wallpapers = {
+    original: { label: 'Original', src: 'assets/matrix-wallpaper-starless.png', overlay: false },
+    desert: { label: 'Dune crawler', src: 'wallpaper-review-v4/01-dune-crawler.png', overlay: true },
+    city: { label: 'Neon city', src: 'wallpaper-review-v4/02-neon-city.png', overlay: true },
+    temple: { label: 'Drowned temple', src: 'wallpaper-review-v4/03-drowned-temple.png', overlay: true },
+    ice: { label: 'Ice valley', src: 'wallpaper-review-v4/04-ice-valley.png', overlay: true },
+    orbital: { label: 'Orbital platform', src: 'wallpaper-review-v4/05-orbital-platform.png', overlay: true }
+  };
+  let selectedWallpaper = Object.hasOwn(wallpapers, saved.wallpaper) ? saved.wallpaper : 'original';
+
   let selectedAgent = saved.agent === null ? null : agents[saved.agent] ? saved.agent : 'Gandalf';
   let messageMode = 'greeting';
   let quoteIndex = 0;
@@ -62,6 +72,7 @@
       scale: uiScale,
       agent: selectedAgent,
       executionMode,
+      wallpaper: selectedWallpaper,
       clock24: use24Hour,
       headerHidden: $('#topBar').classList.contains('header-hidden'),
       displayName: $('#displayName').value.trim()
@@ -625,17 +636,25 @@
   });
   window.addEventListener('pagehide', () => { cancelAnimationFrame(parallax.frame); parallaxPreferences.disconnect(); });
   const landscapeCtx = landscapeCanvas.getContext('2d', { willReadFrequently: true });
-  const landscapeImage = new Image();
+  let landscapeImage = null;
+  let wallpaperRequest = 0;
+  const wallpaperStatus = $('#wallpaperStatus');
+  const wallpaperButtons = [];
   const smoothstep = (low, high, value) => { const t = Math.max(0,Math.min(1,(value-low)/(high-low))); return t*t*(3-2*t); };
   const renderLandscape = () => {
-    if (!landscapeImage.complete || !landscapeImage.naturalWidth) return;
-    const scale = Math.min(1, 2048 / Math.max(innerWidth,innerHeight));
-    const width = Math.round(innerWidth*scale), height = Math.round(innerHeight*scale);
-    landscapeCanvas.width=width; landscapeCanvas.height=height;
-    const fit = Math.max(width/landscapeImage.naturalWidth,height/landscapeImage.naturalHeight);
-    const iw=landscapeImage.naturalWidth*fit, ih=landscapeImage.naturalHeight*fit;
-    landscapeCtx.drawImage(landscapeImage,(width-iw)/2,(height-ih)/2,iw,ih);
-    const pixels=landscapeCtx.getImageData(0,0,width,height);
+    if (!landscapeImage || !landscapeImage.naturalWidth) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const scale = Math.min(dpr, 4096 / Math.max(innerWidth, innerHeight));
+    const width = Math.round(innerWidth * scale), height = Math.round(innerHeight * scale);
+    landscapeCanvas.width = width; landscapeCanvas.height = height;
+    const overlay = wallpapers[selectedWallpaper].overlay;
+    // Bottom-anchor transparent foregrounds; preserve their mist and supplied alpha.
+    const fit = Math.max(width / landscapeImage.naturalWidth, height * (overlay ? .72 : 1) / landscapeImage.naturalHeight);
+    const iw = landscapeImage.naturalWidth * fit, ih = landscapeImage.naturalHeight * fit;
+    landscapeCtx.drawImage(landscapeImage, (width-iw)/2, overlay ? height-ih : (height-ih)/2, iw, ih);
+    if (overlay) return;
+    // The original opaque wallpaper still needs its sky removed at runtime.
+    const pixels = landscapeCtx.getImageData(0,0,width,height);
     for (let y=0;y<height;y+=1) {
       const horizon=smoothstep(.29,.62,y/height);
       for(let x=0;x<width;x+=1) {
@@ -647,9 +666,50 @@
     }
     landscapeCtx.putImageData(pixels,0,0);
   };
-  landscapeImage.addEventListener('load',renderLandscape);
-  landscapeImage.addEventListener('error',()=>{ $('#wallpaperFallback').hidden=false; });
-  landscapeImage.src='assets/matrix-wallpaper-starless.png';
+  const updateWallpaperButtons = () => {
+    wallpaperButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.wallpaper === selectedWallpaper)));
+  };
+  const selectWallpaper = async (name, save = true) => {
+    if (!Object.hasOwn(wallpapers, name)) return;
+    const request = ++wallpaperRequest;
+    wallpaperStatus.textContent = `Loading ${wallpapers[name].label}…`;
+    $('#wallpaperChoices').setAttribute('aria-busy', 'true');
+    const image = new Image();
+    image.src = wallpapers[name].src;
+    try {
+      await image.decode();
+      if (request !== wallpaperRequest) return;
+      selectedWallpaper = name;
+      landscapeImage = image;
+      renderLandscape();
+      $('#wallpaperFallback').hidden = true;
+      root.dataset.wallpaper = name;
+      root.style.setProperty('--wallpaper', `url("${new URL(wallpapers[name].src, document.baseURI).href}")`);
+      updateWallpaperButtons();
+      wallpaperStatus.textContent = `${wallpapers[name].label} selected`;
+      if (save) persist();
+    } catch {
+      if (request !== wallpaperRequest) return;
+      wallpaperStatus.textContent = `Could not load ${wallpapers[name].label}. Try again.`;
+      // Keep the last working landscape and preference when a request fails.
+      if (!landscapeImage) $('#wallpaperFallback').hidden = false;
+    } finally {
+      if (request === wallpaperRequest) $('#wallpaperChoices').setAttribute('aria-busy', 'false');
+    }
+  };
+  Object.entries(wallpapers).forEach(([name, wallpaper]) => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'wallpaper-choice';
+    button.dataset.wallpaper = name;
+    button.setAttribute('aria-pressed', 'false');
+    const thumbnail = document.createElement('img');
+    thumbnail.src = wallpaper.src; thumbnail.alt = ''; thumbnail.loading = 'lazy';
+    const label = document.createElement('span'); label.textContent = wallpaper.label;
+    button.append(thumbnail, label);
+    button.addEventListener('click', () => selectWallpaper(name));
+    $('#wallpaperChoices').append(button); wallpaperButtons.push(button);
+  });
+  selectWallpaper(selectedWallpaper, false);
   let landscapeResizeTimer;
   window.addEventListener('resize',()=> { clearTimeout(landscapeResizeTimer); landscapeResizeTimer=setTimeout(renderLandscape,90); });
 
