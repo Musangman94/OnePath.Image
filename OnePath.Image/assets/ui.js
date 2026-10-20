@@ -55,6 +55,7 @@
   let autoFocusIdleTimer = null;
   let autoFocusEnabled = false;
   let focusStartedAutomatically = false;
+  let focusKeyDown = false;
   let focusKeyHoldTriggered = false;
   let focusKeyPressedDuringAutoSession = false;
   let poseTimer = null;
@@ -580,13 +581,28 @@
       setDisclosure($('#namePanel'), false);
     }
   });
+  const isEditable = (node) => node instanceof Element && (node.isContentEditable
+    || Boolean(node.closest('input, textarea, select, [role="textbox"], [role="searchbox"], [role="combobox"]')));
+  const isTyping = (event) => event.isComposing || event.key === 'Process'
+    || event.composedPath().some(isEditable) || isEditable(document.activeElement);
+  const cancelFocusShortcut = () => {
+    clearTimeout(focusHoldTimer); focusHoldTimer = null;
+    focusKeyDown = false;
+    focusKeyHoldTriggered = false;
+    focusKeyPressedDuringAutoSession = false;
+  };
+  document.addEventListener('focusin', (event) => {
+    if (isTyping(event)) cancelFocusShortcut();
+  });
   document.addEventListener('keydown', (event) => {
+    if (isTyping(event) || event.altKey || event.ctrlKey || event.metaKey) {
+      cancelFocusShortcut(); recordActivity(); return;
+    }
     if (event.key === 'Escape') closeOverlays();
-    if (event.target.matches('input,textarea,[contenteditable=true]')) return;
-    if (event.key.toLowerCase() === 'f' && !event.altKey && !event.ctrlKey && !event.metaKey) {
+    if (event.key.toLowerCase() === 'f') {
       if (event.repeat) return;
-      clearTimeout(focusHoldTimer);
-      focusKeyHoldTriggered = false;
+      cancelFocusShortcut();
+      focusKeyDown = true;
       focusKeyPressedDuringAutoSession = focusStartedAutomatically;
       if (focusKeyPressedDuringAutoSession) { stopFocus(false); scheduleAutoFocus(); }
       focusHoldTimer = setTimeout(() => {
@@ -603,17 +619,20 @@
     if (event.key.toLowerCase() === 'c') setControlsOpen(controlsToggle.getAttribute('aria-expanded') !== 'true');
   });
   document.addEventListener('keyup', (event) => {
+    if (isTyping(event) || event.altKey || event.ctrlKey || event.metaKey) {
+      cancelFocusShortcut(); recordActivity(); return;
+    }
     if (event.key.toLowerCase() === 'f') {
-      clearTimeout(focusHoldTimer); focusHoldTimer = null;
-      if (!focusKeyHoldTriggered && !focusKeyPressedDuringAutoSession) $('#focusButton').click();
-      else focusKeyHoldTriggered = false;
-      focusKeyPressedDuringAutoSession = false;
+      if (!focusKeyDown) return;
+      const toggleFocus = !focusKeyHoldTriggered && !focusKeyPressedDuringAutoSession;
+      cancelFocusShortcut();
+      if (toggleFocus) $('#focusButton').click();
       scheduleAutoFocus();
       return;
     }
     recordActivity();
   });
-  window.addEventListener('blur', () => { clearTimeout(focusHoldTimer); focusHoldTimer = null; });
+  window.addEventListener('blur', cancelFocusShortcut);
   window.addEventListener('mousemove', recordActivity, { passive: true });
   window.addEventListener('pointerdown', recordActivity, { passive: true });
   window.addEventListener('wheel', recordActivity, { passive: true });
