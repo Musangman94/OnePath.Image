@@ -193,6 +193,30 @@
     const versions = { Hermes: 'hermes-imagegen-v2.png', Atomic: 'atomic-imagegen-v3.png' };
     return `assets/constellation-references/${versions[agent] || `${agent.toLowerCase()}-imagegen.png`}`;
   };
+  const updateCloudBlend = () => {
+    const image = $('#skyMotif img');
+    if (!image || !image.naturalWidth) return;
+    const motif = $('#skyMotif');
+    const fit = Math.min(motif.clientWidth / image.naturalWidth, motif.clientHeight / image.naturalHeight);
+    // Artwork files have different amounts of empty padding below their portraits.
+    const sample = document.createElement('canvas');
+    sample.width = 256; sample.height = Math.max(1, Math.round(256 * image.naturalHeight / image.naturalWidth));
+    const ctx = sample.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(image, 0, 0, sample.width, sample.height);
+    const pixels = ctx.getImageData(0, 0, sample.width, sample.height).data;
+    let lastVisibleRow = sample.height - 1;
+    for (let y = sample.height - 1; y >= 0; y--) {
+      let visible = 0;
+      for (let x = 0; x < sample.width; x++) {
+        const i = (y * sample.width + x) * 4;
+        if (pixels[i + 3] > 24 && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) > 40) visible++;
+      }
+      if (visible > 4) { lastVisibleRow = y; break; }
+    }
+    const visibleHeight = (lastVisibleRow + 1) / sample.height * image.naturalHeight * fit;
+    const height = Math.min(innerHeight, Math.max(120, visibleHeight / .72));
+    $('#sceneEffects').style.setProperty('--cloud-blend-height', `${height}px`);
+  };
   const constellationFor = (agent, image = document.createElement('img')) => {
     image.className = 'constellation-artwork';
     image.alt = '';
@@ -203,6 +227,7 @@
     aurora.style.setProperty('--constellation-mask', `url("${image.src}")`);
     motif.dataset.agent = agent;
     motif.replaceChildren(image, aurora);
+    updateCloudBlend();
     motif.dataset.artwork = image.getAttribute('src');
     motif.setAttribute('aria-label', `${agent} aurora constellation across the upper sky behind the clouds`);
   };
@@ -711,7 +736,7 @@
   });
   selectWallpaper(selectedWallpaper, false);
   let landscapeResizeTimer;
-  window.addEventListener('resize',()=> { clearTimeout(landscapeResizeTimer); landscapeResizeTimer=setTimeout(renderLandscape,90); });
+  window.addEventListener('resize',()=> { clearTimeout(landscapeResizeTimer); landscapeResizeTimer=setTimeout(() => { renderLandscape(); updateCloudBlend(); },90); });
 
   const starCanvas = $('#stars');
   const starCtx = starCanvas.getContext('2d', { alpha: true });

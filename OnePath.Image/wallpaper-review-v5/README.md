@@ -4,6 +4,8 @@ The five images have been regenerated using the original wallpaper as the exposu
 
 [Read the art-direction analysis and dashboard comparisons](ART-DIRECTION.md).
 
+[Cloud overlap checks — all 30 combinations passed](CLOUD-BLEND-CHECKS.md). The shared cloud layer gently overlaps the lower constellation, with position adjusted to the actual artwork.
+
 Native generated dimensions are listed below. These are not 4K exports. PNG alpha is preserved.
 
 ## 01-dune-sea

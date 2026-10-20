@@ -152,9 +152,13 @@ button,a,input{transition:color .3s ease,text-shadow .3s ease,opacity .3s ease,f
 :root[data-wallpaper]:not([data-wallpaper=original]) .wallpaper-full{background-position:center bottom;background-size:auto 72%}
 
 /* A quiet middle distance connects transparent terrain to the distant sky. */
-.landscape-atmosphere{display:none;position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse 44% 33% at 4% 65%,rgba(33,62,54,.32),transparent 100%),radial-gradient(ellipse 40% 31% at 94% 62%,rgba(30,58,51,.27),transparent 100%),radial-gradient(ellipse 65% 25% at 50% 80%,rgba(33,62,54,.32),transparent 100%);mask-image:linear-gradient(to bottom,transparent 28%,#000 50%,#000 85%,transparent 100%)}
+.landscape-atmosphere{display:none;position:absolute;inset:0;z-index:3;pointer-events:none}
 :root[data-wallpaper]:not([data-wallpaper=original]) .landscape-atmosphere{display:block}
 :root[data-wallpaper]:not([data-wallpaper=original]) #cloudLandscape,:root[data-wallpaper]:not([data-wallpaper=original]) #wallpaperFallback{scale:1.06;translate:calc(var(--parallax-x) * -1.5vw) calc(var(--parallax-y) * -1.5vh);transform-origin:center bottom}
 :root[data-wallpaper]:not([data-wallpaper=original]) .wallpaper-full{background-size:cover}
 /* Let distant terrain dissolve into the shared haze instead of ending in a cutout. */
 :root[data-wallpaper]:not([data-wallpaper=original]) #cloudLandscape{mask-image:linear-gradient(to bottom,transparent 30%,rgba(0,0,0,.18) 47%,rgba(0,0,0,.72) 65%,#000 79%)}
+/* Shared cloud texture softly veils the lower constellation before the terrain. */
+.landscape-atmosphere::before{content:"";position:absolute;inset:0 0 auto;height:var(--cloud-blend-height,100%);background:url('constellation-cloud-blend.png') center/100% 100% no-repeat;opacity:.48;mask-image:linear-gradient(to bottom,transparent 34%,rgba(0,0,0,.5) 50%,#000 65%,#000 75%,transparent 94%)}
+
+.landscape-atmosphere::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 44% 33% at 4% 65%,rgba(33,62,54,.32),transparent 100%),radial-gradient(ellipse 40% 31% at 94% 62%,rgba(30,58,51,.27),transparent 100%),radial-gradient(ellipse 65% 25% at 50% 80%,rgba(33,62,54,.32),transparent 100%);mask-image:linear-gradient(to bottom,transparent 28%,#000 50%,#000 85%,transparent 100%)}
