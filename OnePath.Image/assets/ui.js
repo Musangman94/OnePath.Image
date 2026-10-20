@@ -34,11 +34,11 @@
 
   const wallpapers = {
     original: { label: 'Original', src: 'assets/matrix-wallpaper-starless.png', overlay: false },
-    desert: { label: 'Dune crawler', src: 'wallpaper-review-v4/01-dune-crawler.png', overlay: true },
-    city: { label: 'Neon city', src: 'wallpaper-review-v4/02-neon-city.png', overlay: true },
-    temple: { label: 'Drowned temple', src: 'wallpaper-review-v4/03-drowned-temple.png', overlay: true },
-    ice: { label: 'Ice valley', src: 'wallpaper-review-v4/04-ice-valley.png', overlay: true },
-    orbital: { label: 'Orbital platform', src: 'wallpaper-review-v4/05-orbital-platform.png', overlay: true }
+    desert: { label: 'Dune sea', src: 'wallpaper-review-v5/01-dune-sea.png', overlay: true },
+    city: { label: 'Distant city', src: 'wallpaper-review-v5/02-distant-city.png', overlay: true },
+    temple: { label: 'Sunken sanctuary', src: 'wallpaper-review-v5/03-sunken-sanctuary.png', overlay: true },
+    ice: { label: 'Glacial inlet', src: 'wallpaper-review-v5/04-glacial-inlet.png', overlay: true },
+    orbital: { label: 'Cloudport', src: 'wallpaper-review-v5/05-cloudport.png', overlay: true }
   };
   let selectedWallpaper = Object.hasOwn(wallpapers, saved.wallpaper) ? saved.wallpaper : 'original';
 
@@ -649,7 +649,7 @@
     landscapeCanvas.width = width; landscapeCanvas.height = height;
     const overlay = wallpapers[selectedWallpaper].overlay;
     // Bottom-anchor transparent foregrounds; preserve their mist and supplied alpha.
-    const fit = Math.max(width / landscapeImage.naturalWidth, height * (overlay ? .72 : 1) / landscapeImage.naturalHeight);
+    const fit = Math.max(width / landscapeImage.naturalWidth, height / landscapeImage.naturalHeight);
     const iw = landscapeImage.naturalWidth * fit, ih = landscapeImage.naturalHeight * fit;
     landscapeCtx.drawImage(landscapeImage, (width-iw)/2, overlay ? height-ih : (height-ih)/2, iw, ih);
     if (overlay) return;
