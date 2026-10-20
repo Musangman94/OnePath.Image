@@ -190,6 +190,38 @@
   const agentPanel = $('#agentPanel');
   const motif = $('#skyMotif');
   let motifRequest = 0;
+  const rainLayer = $('#rain');
+  let rainRendering = false;
+  let rainTransition = null;
+  let rainRequest = 0;
+  const transitionRain = (visible) => {
+    const request = ++rainRequest;
+    // Preserve the current frame so reversing an in-flight fade never snaps.
+    const current = getComputedStyle(rainLayer);
+    const from = { opacity: current.opacity, filter: current.filter };
+    rainLayer.style.opacity = from.opacity;
+    rainLayer.style.filter = from.filter;
+    if (rainTransition) { rainTransition.cancel(); rainTransition = null; }
+    if (!visible && rainLayer.hidden) { rainRendering = false; return; }
+    rainLayer.hidden = false;
+    rainRendering = true;
+    const calm = reducedMotion.matches || root.classList.contains('no-motion');
+    const to = { opacity: visible ? '.74' : '0', filter: calm || visible ? 'blur(0px)' : 'blur(6px)' };
+    const animation = rainLayer.animate([from, to], {
+      duration: calm ? (visible ? 700 : 350) : (visible ? 3200 : 1600),
+      delay: calm ? 0 : 1000,
+      easing: visible ? 'cubic-bezier(.22,.61,.36,1)' : 'ease',
+      fill: 'both'
+    });
+    rainTransition = animation;
+    animation.onfinish = () => {
+      if (request !== rainRequest) return;
+      rainLayer.style.opacity = to.opacity;
+      rainLayer.style.filter = to.filter;
+      animation.cancel(); rainTransition = null;
+      if (!visible) { rainLayer.hidden = true; rainRendering = false; }
+    };
+  };
   const constellationAsset = (agent) => {
     const versions = { Hermes: 'hermes-imagegen-v2.png', Atomic: 'atomic-imagegen-v3.png' };
     return `assets/constellation-references/${versions[agent] || `${agent.toLowerCase()}-imagegen.png`}`;
@@ -239,6 +271,7 @@
   const constellationExitTime = () => reducedMotion.matches || root.classList.contains('no-motion') ? 350 : 1600;
   const switchConstellation = async (name) => {
     const request = ++motifRequest;
+    transitionRain(false);
     const image = new Image();
     image.src = constellationAsset(name);
     const ready = image.decode().catch(() => null);
@@ -249,6 +282,7 @@
     if (!image.naturalWidth) {
       motif.classList.remove('changing');
       delete motif.dataset.pendingAgent;
+      transitionRain(true);
       toast(`${name} sky artwork could not load`);
       return;
     }
@@ -258,6 +292,7 @@
       if (request !== motifRequest) return;
       motif.classList.remove('changing');
       delete motif.dataset.pendingAgent;
+      transitionRain(true);
     }));
   };
 
@@ -319,7 +354,7 @@
   setExecutionMode(executionMode, false);
 
   const updateOffload = () => {
-    $('#rain').hidden = !selectedAgent;
+    if (!selectedAgent) transitionRain(false);
     if (!selectedAgent) $$('.agent').forEach(button => { button.classList.remove('active'); button.setAttribute('aria-pressed','false'); });
     $('#offloadModel').disabled = !selectedAgent;
     $('#offloadModel').setAttribute('aria-label', selectedAgent ? `Offload ${selectedAgent} model` : 'No model selected');
@@ -883,7 +918,7 @@
   };
   const drawRain = (now) => {
     rainFrame = requestAnimationFrame(drawRain);
-    if (!selectedAgent) { rainLast = now; rainDirty = true; return; }
+    if (!rainRendering) { rainLast = now; rainDirty = true; return; }
     const frozen = root.classList.contains('no-motion');
     if (document.hidden || (frozen && !rainDirty)) { rainLast = now; return; }
     const dt = frozen ? 0 : Math.min((now - rainLast) / 1000 || 0, .04);
