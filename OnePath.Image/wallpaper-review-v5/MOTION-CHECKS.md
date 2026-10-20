@@ -19,7 +19,7 @@ Previously, the new landscapes used 1.5vw/1.5vh travel while the original used 4
 
 All landscapes now share 4vw/4vh travel and 1.12× symmetric overscan. The blend follows the same targets and travel using an easing response of 352 ms, compared with 320 ms for the landscape. Thus its response time is 10% longer; this is a temporal lag, not a permanent 10% reduction in distance. Both layers settle at identical endpoints. The animation continues until both layers have settled.
 
-The blend follows on both axes. Motion off, touch/reduced-motion preferences, and disabling pointer motion reset both offsets together. The cloud's vertical placement still adapts to the visible constellation artwork.
+The blend follows on both axes. Motion off, touch/reduced-motion preferences, and disabling pointer motion reset both offsets together. The cloud height now uses DeepSeek's artwork as a fixed reference for all agents; it only recalculates on viewport resize, not agent selection. See [fixed-height checks](FIXED-BLEND-HEIGHT.md).
 
 ## Results
 

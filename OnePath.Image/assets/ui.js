@@ -194,12 +194,14 @@
     const versions = { Hermes: 'hermes-imagegen-v2.png', Atomic: 'atomic-imagegen-v3.png' };
     return `assets/constellation-references/${versions[agent] || `${agent.toLowerCase()}-imagegen.png`}`;
   };
+  // Use DeepSeek as the shared framing reference, independent of agent selection.
+  const cloudBlendReference = new Image();
   const updateCloudBlend = () => {
-    const image = $('#skyMotif img');
+    const image = cloudBlendReference;
     if (!image || !image.naturalWidth) return;
     const motif = $('#skyMotif');
     const fit = Math.min(motif.clientWidth / image.naturalWidth, motif.clientHeight / image.naturalHeight);
-    // Artwork files have different amounts of empty padding below their portraits.
+    // Keep the previous DeepSeek framing, including its transparent padding.
     const sample = document.createElement('canvas');
     sample.width = 256; sample.height = Math.max(1, Math.round(256 * image.naturalHeight / image.naturalWidth));
     const ctx = sample.getContext('2d', { willReadFrequently: true });
@@ -218,6 +220,8 @@
     const height = Math.min(innerHeight, Math.max(120, visibleHeight / .72));
     $('#sceneEffects').style.setProperty('--cloud-blend-height', `${height}px`);
   };
+  cloudBlendReference.addEventListener('load', updateCloudBlend);
+  cloudBlendReference.src = constellationAsset('DeepSeek');
   const constellationFor = (agent, image = document.createElement('img')) => {
     image.className = 'constellation-artwork';
     image.alt = '';
@@ -228,7 +232,6 @@
     aurora.style.setProperty('--constellation-mask', `url("${image.src}")`);
     motif.dataset.agent = agent;
     motif.replaceChildren(image, aurora);
-    updateCloudBlend();
     motif.dataset.artwork = image.getAttribute('src');
     motif.setAttribute('aria-label', `${agent} aurora constellation across the upper sky behind the clouds`);
   };

@@ -1,5 +1,7 @@
 # Cloud overlap checks
 
+Historical overlap results from the earlier per-agent height implementation. The current blend height is shared across all agents using DeepSeek as its reference; see [fixed-height checks](FIXED-BLEND-HEIGHT.md).
+
 All five landscapes were tested individually with Gandalf, Hermes, Atomic and DeepSeek at 1440 × 900 (20 combinations). Each landscape was also checked with Gandalf at 390 × 844 and 3840 × 2160 (10 further combinations). All 30 checks passed; no browser exceptions or failing HTTP responses occurred.
 
 The check sampled visible lower-portrait pixels and the cloud texture alpha in their rendered positions, including the cloud opacity and mask. Every combination had cloud coverage over visible portrait pixels. Coverage remained translucent; effective cloud opacity in the sampled overlap stayed below 0.5. CSS stacking was checked so the clouds render in front of the constellation, behind the landscape and UI.

@@ -4,7 +4,7 @@ The five images have been regenerated using the original wallpaper as the exposu
 
 [Read the art-direction analysis and dashboard comparisons](ART-DIRECTION.md).
 
-[Cloud overlap checks — all 30 combinations passed](CLOUD-BLEND-CHECKS.md). The shared cloud layer gently overlaps the lower constellation, with position adjusted to the actual artwork.
+[Earlier cloud overlap checks](CLOUD-BLEND-CHECKS.md). The shared cloud layer now uses the same DeepSeek-based height for every agent, with parallax movement and its 10% response lag preserved. [Fixed-height verification](FIXED-BLEND-HEIGHT.md).
 
 Native generated dimensions are listed below. These are not 4K exports. PNG alpha is preserved.
 
