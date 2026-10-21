@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06100f">
+  <title>OnePath.Image — Desktop concept</title>
+  <link rel="preload" href="assets/doto-variable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="assets/ui.css">
+  <script defer src="assets/navi-frames.js"></script>
+  <script defer src="assets/ui.js"></script>
+</head>
+<body>
+  <div class="scene-effects" id="sceneEffects" aria-hidden="true">
+    <canvas id="stars"></canvas>
+    <figure class="sky-motif" id="skyMotif" aria-label="Agent constellation"></figure>
+    <canvas id="cloudLandscape" aria-label="Clouds and landscape"></canvas>
+    <div class="wallpaper-full" id="wallpaperFallback" hidden></div>
+    <div class="sky-wash"></div>
+    <canvas id="rain"></canvas>
+    <div class="grain"></div>
+  </div>
+
+  <div id="uiLayer">
+  <header class="top" id="topBar">
+    <div class="brand"><span class="brand-mark"></span>ONEPATH.IMAGE</div>
+    <div class="top-right"><div class="mode-wrap" id="modeWrap"><button id="modeToggle" class="mode-toggle" aria-expanded="false" aria-controls="modeMenu" aria-label="Execution mode: Local"><span class="local-dot"></span><span id="modeLabel">LOCAL</span></button><div id="modeMenu" class="mode-menu" role="group" aria-label="Execution mode" hidden><button data-mode="local" aria-pressed="true">LOCAL<small>On your device</small></button><button data-mode="fusion" aria-pressed="false">FUSION<small>Local + cloud</small></button><small class="mode-note">Connection preference · preview</small></div></div><span class="top-divider"></span><span id="clock">--:--</span></div>
+  </header>
+  <button class="header-toggle" id="headerToggle" aria-label="Hide header" aria-expanded="true" title="Hide header">⌃</button>
+
+  <main class="center" aria-label="Daily dashboard">
+    <div class="clock-face"><div class="time" id="time" aria-live="off"><span id="timeHours">--</span><span class="time-separator" aria-hidden="true"><i></i><i></i></span><span id="timeMinutes">--</span></div><button class="clock-format" id="clockFormat" aria-label="Switch to 12-hour clock" title="Switch to 12-hour clock">24H</button></div>
+    <section class="message-slot" id="messageSlot" aria-live="polite" aria-atomic="true">
+      <p class="message-kicker" id="messageKicker">A MOMENT FOR YOU</p>
+      <p class="message-text" id="messageText">Good evening.</p>
+      <p class="message-credit" id="messageCredit"></p>
+    </section>
+    <div class="center-actions">
+      <button class="focus-button" id="focusButton" aria-label="Start focus session" aria-pressed="false"><span class="focus-orb" aria-hidden="true">◉</span><span id="focusText">Focus</span></button>
+      <button class="chat-trigger" id="agentChat" aria-label="Chat with selected agent" aria-expanded="false" aria-controls="chatPanel"><span class="chat-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="chat-label" id="chatLabel">Chat with Gandalf</span></button>
+    </div>
+    <p class="focus-timer" id="focusTimer" hidden></p>
+  </main>
+
+  <section class="chat-panel" id="chatPanel" aria-label="Agent chat" hidden>
+    <div class="panel-heading"><p id="chatHeading" class="panel-label">CHAT WITH GANDALF</p><button class="panel-close" data-close="chatPanel" aria-label="Close chat">×</button></div>
+    <p id="chatStatus" class="chat-status">Preview · connect an agent to receive replies</p>
+    <form id="chatForm"><label class="sr-only" for="chatInput">Message selected agent</label><textarea id="chatInput" rows="3" maxlength="4000" placeholder="Ask Gandalf…"></textarea><button id="chatSubmit" type="submit">Keep draft ↗</button></form>
+    <p class="chat-status" id="chatFeedback" role="status"></p>
+  </section>
+
+  <section class="agent-panel" id="agentPanel" aria-label="Choose an agent">
+    <p class="panel-label">YOUR AGENTS</p>
+    <button class="agent agent-boss active" data-agent="Gandalf" aria-pressed="true">
+      <span class="agent-glyph"  aria-hidden="true"><span class="brand-icon wizard-icon"></span></span>
+      <span class="agent-copy"><strong>Gandalf</strong><small>Orchestrator <i>·</i> Cloud only</small></span>
+      <span class="agent-state" aria-hidden="true"></span>
+    </button>
+    <button class="agent" data-agent="Hermes" aria-pressed="false"><span class="agent-glyph"  aria-hidden="true"><span class="brand-icon hermes-icon"></span></span><span class="agent-copy"><strong>Hermes</strong><small>Research</small></span><span class="agent-state" aria-hidden="true"></span></button>
+    <button class="agent" data-agent="Atomic" aria-pressed="false"><span class="agent-glyph" aria-hidden="true">⚛</span><span class="agent-copy"><strong>Atomic</strong><small>Workflows</small></span><span class="agent-state" aria-hidden="true"></span></button>
+    <button class="agent" data-agent="DeepSeek" aria-pressed="false"><span class="agent-glyph"  aria-hidden="true"><span class="brand-icon deepseek-icon"></span></span><span class="agent-copy"><strong>DeepSeek</strong><small>Code</small></span><span class="agent-state" aria-hidden="true"></span></button>
+  </section>
+
+
+  <section class="appearance-panel" id="themePanel" aria-label="Appearance controls" hidden>
+    <div class="panel-heading"><p class="panel-label">APPEARANCE</p><button class="panel-close" data-close="themePanel" aria-label="Close appearance controls">×</button></div>
+    <div class="swatches" role="group" aria-label="Color theme">
+      <button class="swatch selected" data-theme="mint" aria-pressed="true"><i style="--swatch:#63ffc1"></i>Mint</button>
+      <button class="swatch" data-theme="amber" aria-pressed="false"><i class="hot-metal" style="--swatch:#ff6a1a"></i>Hot metal</button>
+      <button class="swatch" data-theme="ice" aria-pressed="false"><i style="--swatch:#edf8ff"></i>Ice</button>
+      <button class="swatch" data-theme="matrix" aria-pressed="false"><i style="--swatch:#00ff6a"></i>Matrix</button>
+    </div>
+    <label class="scale-control" for="scaleSlider"><span>Interface scale <output id="scaleValue">100%</output></span><input id="scaleSlider" type="range" min="80" max="120" value="100" aria-label="Interface scale"></label>
+    <div class="display-options"><button id="clockFormatSetting" aria-pressed="false" title="Switch between 12 and 24 hour time">24H clock</button><button id="crtToggle" aria-pressed="false">▤ CRT off</button><button id="motionToggle" aria-pressed="false">◌ <span id="motionText">Motion on</span></button></div>
+  </section>
+
+  <div class="controls-wrap" id="controlsWrap">
+    <button class="controls-toggle" id="controlsToggle" aria-label="Open controls" aria-expanded="false" aria-controls="controlsMenu" title="Controls"><span class="control-glyph" aria-hidden="true">C</span><span class="controls-label">CONTROLS</span></button>
+    <nav class="controls-menu" id="controlsMenu" aria-label="Workspace controls" hidden>
+      <button class="menu-item" data-action="command" aria-label="Command"><span class="menu-icon" aria-hidden="true">⌘</span><span class="menu-tooltip">Command</span></button>
+      <button class="menu-item" data-action="agents" aria-label="Agents" aria-controls="agentPanel"><span class="menu-icon" aria-hidden="true">✦</span><span class="menu-tooltip">Agents</span></button>
+      <button class="menu-item" data-action="appearance" aria-label="Appearance" aria-controls="themePanel"><span class="menu-icon" aria-hidden="true">◇</span><span class="menu-tooltip">Appearance</span></button>
+      <button class="menu-item" data-action="files" aria-label="Files"><span class="menu-icon" aria-hidden="true">▤</span><span class="menu-tooltip">Files</span></button>
+      <button class="menu-item" data-action="name" aria-label="Greeting name" aria-controls="namePanel"><span class="menu-icon" aria-hidden="true">@</span><span class="menu-tooltip">Your name</span></button>
+    </nav>
+    <section class="name-panel" id="namePanel" aria-label="Greeting name" hidden>
+      <label class="name-setting" for="displayName"><span>Greeting name <small>Optional</small></span><input id="displayName" type="text" maxlength="32" autocomplete="name" placeholder="Add your name"></label>
+    </section>
+  </div>
+
+  <div class="navi-launcher" id="naviLauncher">
+    <button class="navi-trigger" id="naviTrigger" aria-label="Open NAVI product shortcuts" aria-expanded="false" aria-controls="naviMenu" title="NAVI">
+<pre class="navi-ascii" id="naviAscii" aria-hidden="true"></pre>
+      <span class="navi-glow" aria-hidden="true"></span><span class="navi-label">NAVI</span>
+    </button>
+    <div class="navi-menu" id="naviMenu" role="menu" aria-label="NAVI product shortcuts" hidden>
+      <p class="menu-heading">LINKED WORKSPACES</p>
+      <a class="navi-link" role="menuitem" href="http://127.0.0.1:5050/" target="_blank" rel="noopener noreferrer"><span class="menu-icon">〈/〉</span><span><strong>DevHub.Studio</strong><small>Development workspace</small></span><span class="menu-tail">↗</span></a>
+      <a class="navi-link" role="menuitem" href="http://127.0.0.1:8501/" target="_blank" rel="noopener noreferrer"><span class="menu-icon">»</span><span><strong>NextPath.City</strong><small>Research and career guide</small></span><span class="menu-tail">↗</span></a>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+  <!-- Screen glass sits outside both scene and scaled interface stacking contexts. -->
+  <div class="crt-overlay" id="crtOverlay" aria-hidden="true">
+    <div class="crt-glass"></div>
+    <div class="crt-scanlines"></div>
+    <div class="crt-phosphor"></div>
+    <div class="crt-sweep"></div>
+  </div>
+</body>
+</html>
