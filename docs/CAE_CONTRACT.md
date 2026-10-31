@@ -31,6 +31,16 @@ Serialize the index as UTF-8 JSON with sorted object keys, no insignificant whit
 
 This is not an owner grant issuer or a complete filesystem collector. Git metadata, source-policy exclusions, approvals, whole-snapshot multi-file atomicity, application/API integration, sandboxing, and platform-release behavior are not established. Native POSIX behavior remains unverified; no startup, owner database, API, or source-collection flow was enabled by this reader work.
 
+### One-use source-selection approval ledger
+
+**Implementation status: implemented and independently verified within a bounded storage scope.** The internal SQLite API is `initialize`, `issue_approval`, and `consume_approval` in [`backend/app/storage/cae_source_approvals.py`](../backend/app/storage/cae_source_approvals.py) (source SHA-256 `3161E6DF3D4692B53C8EFEC5939AEB48B00A1F66F3716B9A94F16415A47FBC54`). `initialize` requires an idle connection. Issue and consume require an already-active caller-owned transaction; this module never commits or rolls back it. The default approval lifetime is 300 seconds and the maximum is 900 seconds. Issuance returns a random 32-byte one-use secret and persists only its SHA-256 digest.
+
+The canonical selection binding covers owner, principal, client and session IDs; root path and platform/device/file identity; the sorted exact file paths, SHA-256 values, sizes and tracked/untracked/generated origins; optional source revision; provenance reference; and exclusion-policy version and reference. Consumption checks the secret, complete canonical selection, expiry, and single-use state. These fields are caller-attested inputs: the ledger does not itself authenticate or authorize the caller, confirm the owner, revalidate a live session, or establish that the selected source metadata is true.
+
+The bounded standard-library `unittest` suite in [`backend/tests/test_cae_source_approvals.py`](../backend/tests/test_cae_source_approvals.py) (test SHA-256 `071D02E3B4608DDE12271EE686DBC57559E50CCECD5E7258A1D8558A64C45ED9`) passed all 9 tests in the recorded review, including wrong-scope/secret rejection, expiry and replay, caller-transaction rollback, concurrent single consumption, and ancestor-path collision rejection. Additional temporary-SQLite probes covered reversed/deeper/casefolded path-prefix collisions and valid siblings. The suite can be run from the repository root with `PYTHONPATH=backend` using `python -m unittest backend.tests.test_cae_source_approvals -v`; it uses this module, the test file, Python's standard library and temporary databases, without starting the application or importing the rest of the untracked backend.
+
+This ledger is not a grant issuer or source collector. It does not prove owner authorization, authentication/session integration, Git state, exclusion correctness, source-byte capture, OS isolation, endpoint wiring, application-startup behavior, or native-platform/release behavior. Those remain separate R1 acceptance gates; no source collection or candidate execution is authorized by this implementation status.
+
 ## 2. V1 CAE boundary
 
 CAE has five engines: **Experience**, **Reflection**, **Assimilation**, **Evaluation**, and **EvolutionController**. Parallel, Idle, and Forced are scheduling modes, not engines. V1 introduces no sixth engine, framework, database, or separate authority layer.
