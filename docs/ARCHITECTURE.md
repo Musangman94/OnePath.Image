@@ -266,9 +266,9 @@ Acceptance must distinguish source checks, development runtime integration, pack
 
 ## Unresolved decisions and limits
 
-- FastAPI and Uvicorn are adopted for the development API. SQLAlchemy/Alembic, actual harness selection and release packaging technology remain proposals until adopted.
+- FastAPI and Uvicorn are adopted for the development API. SQLAlchemy/Alembic remain proposals. Tauri 2 and Hermes, Atomic and DeepSeek Harness are selected V1 technologies; their consumer integration and release acceptance remain open gates.
 - Exact engine/model versions, dependency locks, compatibility and performance require current artifact checks followed by execution tests. Python 3.13 is selected; a particular package combination is not yet runtime-accepted.
-- Final product minimum hardware, supported operating systems and first bundled/downloadable model are not selected.
+- Final product minimum hardware and first bundled/downloadable model remain undecided. Windows and native Ubuntu 24.04 are joint V1 targets; native Ubuntu validation and packaging remain open gates.
 - Shared conversation behavior requires an explicit product decision. Gandalf's cloud-only restriction was removed with owner approval; backend routing enforcement remains pending.
 - Installer/updater implementation, GGUF inference acceptance, Hermes/Atomic/DeepSeek harness behavior, cloud/Fusion routing, release/license handling, and packaged acceptance remain unfinished.
 - The planned 4-GiB cache ceiling is not proof that 4 GiB of cache bytes are allocated or available.
