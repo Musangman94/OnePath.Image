@@ -361,6 +361,29 @@ def _parse_root_observation(raw: bytes, expected_root: Path) -> tuple[str, str]:
     return object_format, head_oid
 
 
+def _git_directory_identity(root: Path) -> tuple[str, int, int]:
+    git_dir = root / ".git"
+    try:
+        info = git_dir.lstat()
+    except OSError:
+        _fail("GIT_DIRECTORY_UNAVAILABLE")
+    if not stat.S_ISDIR(info.st_mode) or _is_reparse(info):
+        _fail("GIT_DIRECTORY_INVALID")
+    _reject_linked_components(git_dir)
+    try:
+        identity = identify_source_root(git_dir)
+    except SourceFileReadError:
+        _fail("GIT_DIRECTORY_INVALID")
+    except Exception:
+        _fail("GIT_DIRECTORY_INVALID")
+    return identity.platform, identity.device, identity.file_id
+
+
+def _verify_git_directory_identity(root: Path, expected: tuple[str, int, int]) -> None:
+    if _git_directory_identity(root) != expected:
+        _fail("GIT_DIRECTORY_CHANGED")
+
+
 class GitMetadataRunner:
     """Run only pinned Git root/index metadata commands for a selected file list."""
 
@@ -377,32 +400,41 @@ class GitMetadataRunner:
         files = validate_approved_files(approved_files)
         canonical_root = _canonical_root(root)
         identity = _verify_root_identity(canonical_root, expected_root_identity)
+        git_directory_identity = _git_directory_identity(canonical_root)
         executable, executable_identity = _validate_executable_pin(self.pin)
         env = _minimal_environment(executable)
         prefix = (
             str(executable), "--no-pager", "--no-optional-locks",
             "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
-            "--literal-pathspecs", "-C", str(canonical_root),
+            "--git-dir=" + str(canonical_root / ".git"),
+            "--work-tree=" + str(canonical_root), "--literal-pathspecs",
         )
         root_command = prefix + ("rev-parse", "--show-toplevel", "--show-object-format", "HEAD")
         index_command = prefix + ("ls-files", "--cached", "--stage", "-v", "--sparse", "--full-name", "-z")
 
         _verify_root_identity(canonical_root, identity)
+        _verify_git_directory_identity(canonical_root, git_directory_identity)
         current_executable, current_identity = _validate_executable_pin(self.pin)
         if current_executable != executable or current_identity != executable_identity:
             _fail("GIT_EXECUTABLE_CHANGED")
         root_output = _run_bounded(self._process_factory, root_command, cwd=executable.parent, env=env)
+        _verify_git_directory_identity(canonical_root, git_directory_identity)
+        _verify_root_identity(canonical_root, identity)
         object_format, head_oid = _parse_root_observation(root_output, canonical_root)
 
         _verify_root_identity(canonical_root, identity)
+        _verify_git_directory_identity(canonical_root, git_directory_identity)
         current_executable, current_identity = _validate_executable_pin(self.pin)
         if current_executable != executable or current_identity != executable_identity:
             _fail("GIT_EXECUTABLE_CHANGED")
         index_output = _run_bounded(self._process_factory, index_command, cwd=executable.parent, env=env)
+        _verify_git_directory_identity(canonical_root, git_directory_identity)
+        _verify_root_identity(canonical_root, identity)
         source_index = parse_cached_index(
             index_output, files, object_format=object_format, head_oid=head_oid,
         )
         _verify_root_identity(canonical_root, identity)
+        _verify_git_directory_identity(canonical_root, git_directory_identity)
         current_executable, current_identity = _validate_executable_pin(self.pin)
         if current_executable != executable or current_identity != executable_identity:
             _fail("GIT_EXECUTABLE_CHANGED")

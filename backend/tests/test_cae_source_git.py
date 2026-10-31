@@ -68,6 +68,8 @@ class CaeSourceGitRunnerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="cae-source-git-fake-")
         self.root = Path(self.temp.name) / "approved-root"
         self.root.mkdir()
+        self.git_dir = self.root / ".git"
+        self.git_dir.mkdir()
         self.exe = Path(self.temp.name) / ("fake-git.exe" if os.name == "nt" else "fake-git")
         self.exe.write_bytes(b"owned fake executable bytes; never launched")
         if os.name == "posix":
@@ -113,6 +115,9 @@ class CaeSourceGitRunnerTests(unittest.TestCase):
         self.assertIn("--no-pager", first[0])
         self.assertIn("--no-optional-locks", first[0])
         self.assertIn("--literal-pathspecs", first[0])
+        self.assertIn("--git-dir=" + str(self.git_dir), first[0])
+        self.assertIn("--work-tree=" + str(self.root), first[0])
+        self.assertNotIn("-C", first[0])
         self.assertEqual(first[0][-4:], ("rev-parse", "--show-toplevel", "--show-object-format", "HEAD"))
         self.assertEqual(second[0][-7:], ("ls-files", "--cached", "--stage", "-v", "--sparse", "--full-name", "-z"))
         for argv, kwargs in (first, second):
@@ -180,6 +185,36 @@ class CaeSourceGitRunnerTests(unittest.TestCase):
             self.runner(factory).observe(self.root, self.root_identity, self.approved)
         self.assertEqual(raised.exception.code, "GIT_ROOT_MISMATCH")
         self.assertEqual(len(factory.calls), 1)
+
+    def test_missing_or_gitfile_dot_git_fails_before_launch(self):
+        factory = self.valid_factory()
+        self.git_dir.rmdir()
+        with self.assertRaises(git_runner.GitObservationError) as missing:
+            self.runner(factory).observe(self.root, self.root_identity, self.approved)
+        self.assertEqual(missing.exception.code, "GIT_DIRECTORY_UNAVAILABLE")
+        self.assertEqual(factory.calls, [])
+
+        self.git_dir.write_text("gitdir: elsewhere", encoding="utf-8")
+        with self.assertRaises(git_runner.GitObservationError) as gitfile:
+            self.runner(factory).observe(self.root, self.root_identity, self.approved)
+        self.assertEqual(gitfile.exception.code, "GIT_DIRECTORY_INVALID")
+        self.assertEqual(factory.calls, [])
+
+    def test_replaced_dot_git_after_root_child_stops_before_index_launch(self):
+        base = ScriptedFactory((ScriptedProcess(self.root_output), ScriptedProcess(self.index_output)))
+        original = self.git_dir
+
+        def replacing_factory(argv, **kwargs):
+            process = base(argv, **kwargs)
+            if len(base.calls) == 1:
+                original.rename(self.root / ".git-old")
+                original.mkdir()
+            return process
+
+        with self.assertRaises(git_runner.GitObservationError) as replaced:
+            self.runner(replacing_factory).observe(self.root, self.root_identity, self.approved)
+        self.assertEqual(replaced.exception.code, "GIT_DIRECTORY_CHANGED")
+        self.assertEqual(len(base.calls), 1)
 
     def test_invalid_object_format_or_head_stops_before_index_command(self):
         outputs = (
