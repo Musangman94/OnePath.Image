@@ -6,12 +6,13 @@ Git, enumerate a repository, or persist source data.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import hashlib
 import os
 import re
 import stat
+from types import MappingProxyType
 from typing import Any
 
 from pydantic import ValidationError
@@ -44,6 +45,44 @@ class SourceReadLimits:
         if any(type(value) is not int or value <= 0
                for value in (self.max_files, self.max_file_bytes, self.max_total_bytes)):
             raise ValueError("source read limits must be positive finite integers")
+
+
+@dataclass(frozen=True)
+class MeasuredSourceFileV1:
+    path: str
+    size_bytes: int
+    sha256: str
+
+
+@dataclass(frozen=True)
+class SourceInspectionV1:
+    """Immutable measured metadata and detached bytes from explicitly selected paths."""
+
+    entries: tuple[MeasuredSourceFileV1, ...]
+    file_bytes: Mapping[str, bytes]
+
+    def __post_init__(self) -> None:
+        entries = tuple(MeasuredSourceFileV1(item.path, item.size_bytes, item.sha256)
+                        for item in self.entries)
+        copied = {path: bytes(value) for path, value in self.file_bytes.items()}
+        if set(copied) != {entry.path for entry in entries}:
+            raise ValueError("inspection entries and bytes must match")
+        object.__setattr__(self, "entries", entries)
+        object.__setattr__(self, "file_bytes", MappingProxyType(copied))
+
+
+@dataclass(frozen=True)
+class _SourceReadRequest:
+    path: str
+    declared_entry: SourceFileEntryV1 | None
+
+
+@dataclass(frozen=True)
+class _OpenedSourceFile:
+    request: _SourceReadRequest
+    handle: Any
+    before: Any
+    size_bytes: int
 
 
 _DRIVE_ROOT = re.compile(r"^[A-Za-z]:\\$")
@@ -88,15 +127,55 @@ def _validated_entries(
             entry = SourceFileEntryV1.model_validate(source)
         except (ValidationError, TypeError):
             raise SourceFileReadError("INVALID_SOURCE_ENTRY") from None
-        folded = entry.path.casefold()
+        path = _validated_relative_path(entry.path)
+        folded = path.casefold()
         if folded in seen:
             raise SourceFileReadError("SOURCE_PATH_COLLISION")
         seen.add(folded)
         if entry.sizeBytes > limits.max_file_bytes or entry.sizeBytes > limits.max_total_bytes - total:
             raise SourceFileReadError("SOURCE_LIMIT_EXCEEDED")
         total += entry.sizeBytes
-        result.append(entry)
+        result.append(SourceFileEntryV1(
+            path=path, sizeBytes=entry.sizeBytes, sha256=entry.sha256, origin=entry.origin,
+        ))
     return result
+
+
+def _validated_relative_path(path: object) -> str:
+    if not isinstance(path, str):
+        raise SourceFileReadError("INVALID_SOURCE_ENTRY")
+    try:
+        encoded = path.encode("utf-8")
+        entry = SourceFileEntryV1.model_validate({
+            "path": path, "sizeBytes": 0, "sha256": "0" * 64, "origin": "tracked",
+        })
+    except (UnicodeEncodeError, ValidationError, TypeError):
+        raise SourceFileReadError("INVALID_SOURCE_ENTRY") from None
+    if len(encoded) > 1024:
+        raise SourceFileReadError("SOURCE_LIMIT_EXCEEDED")
+    return entry.path
+
+
+def _validated_selected_paths(
+    relative_paths: Sequence[str], limits: SourceReadLimits,
+) -> list[str]:
+    if (not isinstance(relative_paths, Sequence)
+            or isinstance(relative_paths, (str, bytes, bytearray))
+            or not relative_paths):
+        raise SourceFileReadError("INVALID_SOURCE_ENTRIES")
+    snapshot = tuple(relative_paths)
+    if not snapshot or len(snapshot) > limits.max_files:
+        raise SourceFileReadError("SOURCE_LIMIT_EXCEEDED")
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in snapshot:
+        path = _validated_relative_path(value)
+        folded = path.casefold()
+        if folded in seen:
+            raise SourceFileReadError("SOURCE_PATH_COLLISION")
+        seen.add(folded)
+        result.append(path)
+    return sorted(result)
 
 
 def _snapshot_limits(limits: SourceReadLimits) -> SourceReadLimits:
@@ -155,10 +234,41 @@ def capture_source_bytes(
     limits = _snapshot_limits(limits)
     checked = _validated_entries(entries, limits)  # before any leaf-file open
     expected_identity = _snapshot_identity(expected_identity)
+    requests = [_SourceReadRequest(entry.path, entry) for entry in checked]
+    output, _measured = _read_selected_files(value, expected_identity, requests, limits)
+    return output
+
+
+def inspect_selected_source_files(
+    root: str | os.PathLike[str],
+    expected_identity: SourceRootIdentity,
+    relative_paths: Sequence[str],
+    limits: SourceReadLimits,
+) -> SourceInspectionV1:
+    """Read exactly selected relative paths and measure bytes through held handles.
+
+    This is a bounded reader, not an authorization decision, source enumerator,
+    secret scan, Git observation, or atomic whole-root snapshot.
+    """
+    value = _root_text(root)
+    limits = _snapshot_limits(limits)
+    paths = _validated_selected_paths(relative_paths, limits)  # before any leaf open
+    expected_identity = _snapshot_identity(expected_identity)
+    requests = [_SourceReadRequest(path, None) for path in paths]
+    output, measured = _read_selected_files(value, expected_identity, requests, limits)
+    return SourceInspectionV1(tuple(measured), output)
+
+
+def _read_selected_files(
+    root: str,
+    expected_identity: SourceRootIdentity,
+    requests: list[_SourceReadRequest],
+    limits: SourceReadLimits,
+) -> tuple[dict[str, bytes], tuple[MeasuredSourceFileV1, ...]]:
     if os.name == "nt":
-        return _capture_windows(value, expected_identity, checked, limits)
+        return _capture_windows(root, expected_identity, requests, limits)
     if os.name == "posix":
-        return _capture_posix(value, expected_identity, checked, limits)
+        return _capture_posix(root, expected_identity, requests, limits)
     raise SourceFileReadError("UNSUPPORTED_PLATFORM")
 
 
@@ -201,18 +311,21 @@ def _open_posix_child(parent_fd: int, component: str, *, directory: bool) -> int
 def _capture_posix(
     root: str,
     expected: SourceRootIdentity,
-    entries: list[SourceFileEntryV1],
+    requests: list[_SourceReadRequest],
     limits: SourceReadLimits,
-) -> dict[str, bytes]:
+) -> tuple[dict[str, bytes], tuple[MeasuredSourceFileV1, ...]]:
     handles: list[int] = []
     output: dict[str, bytes] = {}
+    measured: list[MeasuredSourceFileV1] = []
+    total = 0
+    opened: list[_OpenedSourceFile] = []
     try:
         _root_path, observed = _open_posix_root(root, handles)
         if expected.platform != "posix" or observed != expected:
             raise SourceFileReadError("ROOT_IDENTITY_MISMATCH")
         root_fd = handles[-1]
-        for entry in entries:
-            components = entry.path.split("/")
+        for request in requests:
+            components = request.path.split("/")
             parent_fd = root_fd
             for component in components[:-1]:
                 child_fd = _open_posix_child(parent_fd, component, directory=True)
@@ -223,15 +336,27 @@ def _capture_posix(
             before = os.fstat(leaf_fd)
             if not stat.S_ISREG(before.st_mode):
                 raise SourceFileReadError("SOURCE_FILE_NOT_REGULAR")
-            if before.st_size != entry.sizeBytes:
+            expected_size = before.st_size
+            if (request.declared_entry is not None
+                    and expected_size != request.declared_entry.sizeBytes):
                 raise SourceFileReadError("SOURCE_SIZE_MISMATCH")
-            raw = _read_posix(leaf_fd, entry.sizeBytes)
-            after = os.fstat(leaf_fd)
-            if _posix_signature(before) != _posix_signature(after):
+            if (expected_size > limits.max_file_bytes
+                    or expected_size > limits.max_total_bytes - total):
+                raise SourceFileReadError("SOURCE_LIMIT_EXCEEDED")
+            total += expected_size
+            opened.append(_OpenedSourceFile(request, leaf_fd, before, expected_size))
+        for item in opened:
+            raw = _read_posix(item.handle, item.size_bytes)
+            after = os.fstat(item.handle)
+            if _posix_signature(item.before) != _posix_signature(after):
                 raise SourceFileReadError("SOURCE_CHANGED_DURING_READ")
-            _verify_bytes(entry, raw)
-            output[entry.path] = raw
-        return output
+            if item.request.declared_entry is not None:
+                _verify_bytes(item.request.declared_entry, raw)
+            output[item.request.path] = raw
+            measured.append(MeasuredSourceFileV1(
+                item.request.path, len(raw), hashlib.sha256(raw).hexdigest(),
+            ))
+        return output, tuple(measured)
     finally:
         _close_posix(handles)
 
@@ -428,19 +553,22 @@ def _open_windows_root(root: str, handles: list[Any], api: Any | None = None) ->
 def _capture_windows(
     root: str,
     expected: SourceRootIdentity,
-    entries: list[SourceFileEntryV1],
+    requests: list[_SourceReadRequest],
     limits: SourceReadLimits,
-) -> dict[str, bytes]:
+) -> tuple[dict[str, bytes], tuple[MeasuredSourceFileV1, ...]]:
     handles: list[Any] = []
     output: dict[str, bytes] = {}
+    measured: list[MeasuredSourceFileV1] = []
+    total = 0
+    opened: list[_OpenedSourceFile] = []
     api = _windows_api()
     try:
         root_path, observed = _open_windows_root(root, handles, api)
         if expected.platform != "windows_ntfs" or observed != expected:
             raise SourceFileReadError("ROOT_IDENTITY_MISMATCH")
         root_volume = observed.device
-        for entry in entries:
-            components = entry.path.split("/")
+        for request in requests:
+            components = request.path.split("/")
             current = root_path
             for component in components[:-1]:
                 current = os.path.join(current, component)
@@ -456,15 +584,27 @@ def _capture_windows(
             if (before.dwFileAttributes & (_FILE_ATTRIBUTE_DIRECTORY | _FILE_ATTRIBUTE_DEVICE)
                     or before.dwVolumeSerialNumber != root_volume):
                 raise SourceFileReadError("SOURCE_FILE_NOT_REGULAR")
-            if _windows_size(before) != entry.sizeBytes:
+            expected_size = _windows_size(before)
+            if (request.declared_entry is not None
+                    and expected_size != request.declared_entry.sizeBytes):
                 raise SourceFileReadError("SOURCE_SIZE_MISMATCH")
-            raw = _read_windows(api, leaf, entry.sizeBytes)
-            after = api.info(leaf)
-            if _windows_signature(before) != _windows_signature(after):
+            if (expected_size > limits.max_file_bytes
+                    or expected_size > limits.max_total_bytes - total):
+                raise SourceFileReadError("SOURCE_LIMIT_EXCEEDED")
+            total += expected_size
+            opened.append(_OpenedSourceFile(request, leaf, before, expected_size))
+        for item in opened:
+            raw = _read_windows(api, item.handle, item.size_bytes)
+            after = api.info(item.handle)
+            if _windows_signature(item.before) != _windows_signature(after):
                 raise SourceFileReadError("SOURCE_CHANGED_DURING_READ")
-            _verify_bytes(entry, raw)
-            output[entry.path] = raw
-        return output
+            if item.request.declared_entry is not None:
+                _verify_bytes(item.request.declared_entry, raw)
+            output[item.request.path] = raw
+            measured.append(MeasuredSourceFileV1(
+                item.request.path, len(raw), hashlib.sha256(raw).hexdigest(),
+            ))
+        return output, tuple(measured)
     finally:
         _close_windows(api, handles)
 

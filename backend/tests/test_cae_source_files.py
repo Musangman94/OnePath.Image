@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
@@ -44,6 +45,14 @@ class CaeSourceFileReaderTests(unittest.TestCase):
             self.limits if limits is None else limits,
         )
 
+    def inspect(self, paths, *, root=None, identity=None, limits=None):
+        return source_files.inspect_selected_source_files(
+            self.root if root is None else root,
+            self.identity if identity is None else identity,
+            paths,
+            self.limits if limits is None else limits,
+        )
+
     def test_binary_empty_and_multiple_file_roundtrip(self):
         binary = b"\x00\xff\x80\r\n"
         (self.root / "nested").mkdir()
@@ -53,6 +62,92 @@ class CaeSourceFileReaderTests(unittest.TestCase):
         captured = self.capture(entries)
         self.assertEqual(captured, {"nested/binary.dat": binary, "empty.txt": b""})
         self.assertIs(type(captured["nested/binary.dat"]), bytes)
+
+    def test_inspection_measures_empty_binary_and_multiple_files_deterministically(self):
+        binary = b"\x00\xff\x80\r\n"
+        (self.root / "nested").mkdir()
+        (self.root / "nested" / "binary.dat").write_bytes(binary)
+        (self.root / "empty.txt").write_bytes(b"")
+        selected = ["nested/binary.dat", "empty.txt"]
+        measured = self.inspect(selected)
+        reversed_result = self.inspect(list(reversed(selected)))
+        self.assertEqual(measured.entries, reversed_result.entries)
+        self.assertEqual(measured.file_bytes["nested/binary.dat"], binary)
+        self.assertEqual(measured.file_bytes["empty.txt"], b"")
+        self.assertEqual(
+            [(entry.path, entry.size_bytes, entry.sha256) for entry in measured.entries],
+            [("empty.txt", 0, hashlib.sha256(b"").hexdigest()),
+             ("nested/binary.dat", len(binary), hashlib.sha256(binary).hexdigest())],
+        )
+        self.assertFalse(hasattr(measured.entries[0], "origin"))
+
+    def test_inspection_snapshots_paths_entries_and_readonly_bytes(self):
+        content = b"stable bytes"
+        (self.root / "source.bin").write_bytes(content)
+        selected = ["source.bin"]
+        result = self.inspect(selected)
+        selected.clear()
+        self.assertEqual(result.entries[0].path, "source.bin")
+        self.assertEqual(result.file_bytes["source.bin"], content)
+        with self.assertRaises(TypeError):
+            result.file_bytes["source.bin"] = b"changed"
+        with self.assertRaises((AttributeError, TypeError)):
+            result.entries[0].path = "changed"
+
+    def test_inspection_rejects_invalid_paths_collisions_and_path_byte_overflow_before_leaf_read(self):
+        for paths, code in (
+            ("missing.txt", "INVALID_SOURCE_ENTRIES"),
+            (["../outside"], "INVALID_SOURCE_ENTRY"),
+            (["/absolute"], "INVALID_SOURCE_ENTRY"),
+            (["C:/drive"], "INVALID_SOURCE_ENTRY"),
+            (["a\\b"], "INVALID_SOURCE_ENTRY"),
+            (["missing", "MISSING"], "SOURCE_PATH_COLLISION"),
+            (["é" * 600], "SOURCE_LIMIT_EXCEEDED"),
+            (["missing", 42], "INVALID_SOURCE_ENTRY"),
+        ):
+            with self.subTest(paths=paths):
+                with self.assertRaises(source_files.SourceFileReadError) as raised:
+                    self.inspect(paths)
+                self.assertEqual(raised.exception.code, code)
+
+        with self.assertRaises(source_files.SourceFileReadError) as count_capped:
+            self.inspect(["missing-a", "missing-b"],
+                         limits=source_files.SourceReadLimits(1, 10, 10))
+        self.assertEqual(count_capped.exception.code, "SOURCE_LIMIT_EXCEEDED")
+
+    def test_inspection_enforces_observed_file_and_aggregate_caps(self):
+        (self.root / "large.bin").write_bytes(b"12345")
+        read_name = "_read_windows" if os.name == "nt" else "_read_posix"
+        read_method = getattr(source_files, read_name)
+        with patch.object(source_files, read_name, wraps=read_method) as content_read:
+            with self.assertRaises(source_files.SourceFileReadError) as per_file:
+                self.inspect(["large.bin"], limits=source_files.SourceReadLimits(1, 4, 8))
+            content_read.assert_not_called()
+        self.assertEqual(per_file.exception.code, "SOURCE_LIMIT_EXCEEDED")
+
+        (self.root / "first.bin").write_bytes(b"123")
+        (self.root / "second.bin").write_bytes(b"456")
+        with patch.object(source_files, read_name, wraps=read_method) as content_read:
+            with self.assertRaises(source_files.SourceFileReadError) as aggregate:
+                self.inspect(["first.bin", "second.bin"],
+                             limits=source_files.SourceReadLimits(2, 3, 5))
+            content_read.assert_not_called()
+        self.assertEqual(aggregate.exception.code, "SOURCE_LIMIT_EXCEEDED")
+
+    def test_inspected_measurements_feed_hash_verified_capture(self):
+        content = b"approved bytes"
+        path = self.root / "source.bin"
+        path.write_bytes(content)
+        measured = self.inspect(["source.bin"])
+        entries = [SourceFileEntryV1(
+            path=item.path, sizeBytes=item.size_bytes, sha256=item.sha256, origin="tracked",
+        ) for item in measured.entries]
+        self.assertEqual(self.capture(entries), {"source.bin": content})
+
+        path.write_bytes(b"altered bytes!")
+        with self.assertRaises(source_files.SourceFileReadError) as changed:
+            self.capture(entries)
+        self.assertEqual(changed.exception.code, "SOURCE_HASH_MISMATCH")
 
     def test_invalid_paths_case_collisions_and_limits_are_rejected_before_leaf_open(self):
         for path in ("../outside", "/absolute", "C:/drive", "a\\b"):
@@ -90,6 +185,9 @@ class CaeSourceFileReaderTests(unittest.TestCase):
         with self.assertRaises(source_files.SourceFileReadError) as mismatch:
             self.capture([entry], identity=other_identity)
         self.assertEqual(mismatch.exception.code, "ROOT_IDENTITY_MISMATCH")
+        with self.assertRaises(source_files.SourceFileReadError) as inspected:
+            self.inspect(["not-opened"], identity=other_identity)
+        self.assertEqual(inspected.exception.code, "ROOT_IDENTITY_MISMATCH")
 
     def test_size_and_digest_mismatches_fail_closed(self):
         path = self.root / "observed.bin"
@@ -137,6 +235,9 @@ class CaeSourceFileReaderTests(unittest.TestCase):
                 with self.assertRaises(source_files.SourceFileReadError) as raised:
                     self.capture([expected])
                 self.assertEqual(raised.exception.code, "SOURCE_FILE_OPEN_FAILED")
+                with self.assertRaises(source_files.SourceFileReadError) as inspected:
+                    self.inspect([relative])
+                self.assertEqual(inspected.exception.code, "SOURCE_FILE_OPEN_FAILED")
 
     @unittest.skipUnless(os.name == "nt", "Native Windows NTFS junction proof requires Windows")
     def test_windows_junction_component_is_rejected_and_removed_safely(self):
@@ -162,6 +263,9 @@ class CaeSourceFileReaderTests(unittest.TestCase):
             with self.assertRaises(source_files.SourceFileReadError) as raised:
                 self.capture([entry])
             self.assertEqual(raised.exception.code, "SOURCE_REPARSE_REJECTED")
+            with self.assertRaises(source_files.SourceFileReadError) as inspected:
+                self.inspect(["junction/file.bin"])
+            self.assertEqual(inspected.exception.code, "SOURCE_REPARSE_REJECTED")
         finally:
             if link.is_junction():
                 self.assertTrue(link.parent.resolve(strict=True).is_relative_to(self.temp_root))
@@ -190,6 +294,9 @@ class CaeSourceFileReaderTests(unittest.TestCase):
         with self.assertRaises(source_files.SourceFileReadError) as raised:
             self.capture([_entry("file-link.bin", content)])
         self.assertEqual(raised.exception.code, "SOURCE_REPARSE_REJECTED")
+        with self.assertRaises(source_files.SourceFileReadError) as inspected:
+            self.inspect(["file-link.bin"])
+        self.assertEqual(inspected.exception.code, "SOURCE_REPARSE_REJECTED")
 
     @unittest.skipUnless(os.name == "posix", "POSIX FIFO proof requires a native POSIX filesystem")
     def test_posix_fifo_leaf_is_rejected_as_nonregular(self):
@@ -199,6 +306,9 @@ class CaeSourceFileReaderTests(unittest.TestCase):
         with self.assertRaises(source_files.SourceFileReadError) as raised:
             self.capture([entry])
         self.assertEqual(raised.exception.code, "SOURCE_FILE_NOT_REGULAR")
+        with self.assertRaises(source_files.SourceFileReadError) as inspected:
+            self.inspect(["pipe"])
+        self.assertEqual(inspected.exception.code, "SOURCE_FILE_NOT_REGULAR")
 
 
 if __name__ == "__main__":
