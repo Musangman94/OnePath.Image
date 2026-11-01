@@ -223,6 +223,11 @@ def _canonical(value: dict) -> bytes:
         _fail()
 
 
+def canonical_source_selection(selection: SourceSelection) -> bytes:
+    """Return the ledger's validated canonical selection bytes without persisting a grant."""
+    return _canonical(_selection_value(selection))
+
+
 def _require_connection(connection: sqlite3.Connection) -> None:
     if not isinstance(connection, sqlite3.Connection):
         raise SourceApprovalError("INVALID_CONNECTION")
