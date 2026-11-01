@@ -373,6 +373,26 @@ def get_review(connection: sqlite3.Connection, review_id: str) -> SourceReviewRe
     return _row_record(row)
 
 
+def selection_from_review(record: SourceReviewRecordV1) -> SourceSelection:
+    """Return a validated detached selection from a loaded review record.
+
+    This checks structure and canonical bytes only; it does not attest that the
+    record came from this database or authenticate any identity in it.
+    """
+    if not isinstance(record, SourceReviewRecordV1):
+        _fail("REVIEW_CORRUPT")
+    checked = _row_record((
+        record.review_id, record.revision, record.state, record.record_sha256,
+        record.record_bytes, record.created_at, record.expires_at,
+        record.decided_at, record.approval_id,
+    ))
+    value = _validate_payload(
+        checked.record_bytes, checked.record_sha256, checked.review_id,
+        checked.created_at, checked.expires_at,
+    )
+    return _decode_selection(value["selection"])
+
+
 def decide_review(
     connection: sqlite3.Connection,
     *,
@@ -385,7 +405,7 @@ def decide_review(
 ) -> SourceReviewRecordV1:
     """CAS the sole pending decision; approval_id is a reference, never authority."""
     _require_transaction(connection)
-    if decision not in _DECISIONS:
+    if not isinstance(decision, str) or decision not in _DECISIONS:
         _fail("INVALID_REVIEW_DECISION")
     if type(expected_revision) is not int or expected_revision != 1:
         _fail("STALE_REVIEW")

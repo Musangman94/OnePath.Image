@@ -105,6 +105,17 @@ class SourceApprovalService:
             exclusion_policy_ref=scope.exclusion_policy_ref,
         )
 
+    def bind_scope(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        session_token: str | None,
+        scope: SourceApprovalScopeV1,
+    ) -> SourceSelection:
+        """Bind identity-free scope data to a freshly authenticated session."""
+        proof = self.auth_service.authenticate_session(session_token, connection=connection)
+        return self._selection(proof, scope)
+
     def issue(
         self,
         connection: sqlite3.Connection,
