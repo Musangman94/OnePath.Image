@@ -314,7 +314,26 @@ class NativeProbePlanTests(unittest.TestCase):
 
     def test_recomputed_hash_does_not_authorize_tampered_plan_fields(self):
         base = probe.build_plan(run_id="a" * 32, created_utc="2026-11-01T00:00:00Z")
+        self.assertEqual(base["schema"], "cae-source-git-native-probe-plan-v2")
+        self.assertIn("launch", base["pythonExecutable"])
+        self.assertIn("sha256", base["pythonExecutable"]["launch"])
+        self.assertIn("imagePath", base["pythonExecutable"]["launch"])
+        if base["pythonExecutable"]["base"] is not None:
+            self.assertIn("sha256", base["pythonExecutable"]["base"])
+        self.assertIn("external launcher must hash", base["pythonPinRule"])
         mutations = []
+
+        candidate = copy.deepcopy(base)
+        del candidate["pythonExecutable"]
+        mutations.append(candidate)
+
+        candidate = copy.deepcopy(base)
+        candidate["pythonExecutable"]["launch"]["sha256"] = "0" * 64
+        mutations.append(candidate)
+
+        candidate = copy.deepcopy(base)
+        candidate["pythonExecutable"]["launch"]["path"] = "C:/other/python.exe"
+        mutations.append(candidate)
 
         candidate = copy.deepcopy(base)
         candidate["environment"]["values"]["GIT_ALLOW_PROTOCOL"] = "https"
@@ -347,6 +366,30 @@ class NativeProbePlanTests(unittest.TestCase):
         noncanonical = canonical + b"\n"
         with self.assertRaises(ValueError):
             probe._validate_plan_payload(noncanonical, hashlib.sha256(noncanonical).hexdigest())
+
+    def test_changed_synthetic_interpreter_image_fails_before_dispatch(self):
+        with tempfile.TemporaryDirectory(prefix="cae-python-pin-") as temp:
+            image = Path(temp) / "python-image.exe"
+            image.write_bytes(b"interpreter-image-before")
+            expected = probe._python_identity(str(image), None)
+            image.write_bytes(b"interpreter-image-after")
+            dispatched = []
+            with patch.object(probe.sys, "executable", str(image)):
+                with self.assertRaisesRegex(ValueError, "PYTHON_PIN_CHANGED"):
+                    probe._launch_checked_python(expected, lambda *a, **k: dispatched.append((a, k)))
+            self.assertEqual(dispatched, [])
+
+    def test_process_factory_checks_interpreter_pin_before_native_popen(self):
+        tree = ast.parse(HARNESS.read_text(encoding="utf-8"))
+        factories = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+                     and node.name == "process_factory"]
+        self.assertEqual(len(factories), 1)
+        calls = [node for node in ast.walk(factories[0]) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name) and node.func.id == "_launch_checked_python"]
+        self.assertEqual(len(calls), 1)
+        call = calls[0]
+        self.assertTrue(any(isinstance(arg, ast.Attribute) and arg.attr == "Popen"
+                            for arg in ast.walk(call)))
 
 
 if __name__ == "__main__":

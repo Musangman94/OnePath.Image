@@ -50,7 +50,7 @@ FROZEN_DEPENDENCIES = {
     "planTest": "backend/tests/test_cae_source_git_native_plan.py",
 }
 EXPECTED_GIT_VERSION_LABEL = "pending-native-version-check"
-PLAN_SCHEMA = "cae-source-git-native-probe-plan-v1"
+PLAN_SCHEMA = "cae-source-git-native-probe-plan-v2"
 MAX_PLAN_BYTES = 128 * 1024
 MAX_CHILDREN = 16
 TOTAL_SECONDS = 600
@@ -162,6 +162,40 @@ def _exe_hash() -> str:
     return _digest_file(canonical, 128 * 1024 * 1024)
 
 
+def _interpreter_image(path_value: str) -> dict[str, str]:
+    path = Path(path_value)
+    if not path.is_absolute():
+        raise ValueError("PYTHON_EXECUTABLE_PATH_INVALID")
+    _reject_reparse_ancestors(path)
+    try:
+        image = path.resolve(strict=True)
+    except OSError:
+        raise ValueError("PYTHON_EXECUTABLE_MISSING") from None
+    if not stat.S_ISREG(image.stat(follow_symlinks=False).st_mode):
+        raise ValueError("PYTHON_EXECUTABLE_REJECTED")
+    return {"path": str(path), "imagePath": str(image),
+            "sha256": _digest_file(image, 256 * 1024 * 1024)}
+
+
+def _python_identity(executable: str | None = None,
+                     base_executable: str | None = None) -> dict[str, object]:
+    launch_path = sys.executable if executable is None else executable
+    base_path = getattr(sys, "_base_executable", None) if base_executable is None else base_executable
+    launch = _interpreter_image(launch_path)
+    base = None
+    if isinstance(base_path, str) and base_path:
+        candidate = Path(base_path)
+        if not candidate.is_absolute() or os.path.normcase(str(candidate)) != os.path.normcase(launch_path):
+            base = _interpreter_image(base_path)
+    return {"launch": launch, "base": base}
+
+
+def _launch_checked_python(expected: dict[str, object], dispatch, *args, **kwargs):
+    if _python_identity() != expected:
+        raise ValueError("PYTHON_PIN_CHANGED")
+    return dispatch(*args, **kwargs)
+
+
 def _commands(root: str, template: str, commits: tuple[str, str], blob_oid: str,
               marker: str) -> list[dict[str, object]]:
     """Return the finite argv list. Only validated stdout-derived OIDs remain placeholders."""
@@ -212,6 +246,7 @@ def build_plan(*, run_id: str | None = None, created_utc: str | None = None) -> 
     if runner_hash != EXPECTED_RUNNER_SHA256 or test_hash != EXPECTED_TEST_SHA256:
         raise ValueError("FROZEN_INPUT_HASH_MISMATCH")
     git_hash = _exe_hash()
+    python_identity = _python_identity()
     run_id = secrets.token_hex(16) if run_id is None else run_id
     if (not isinstance(run_id, str) or len(run_id) != 32
             or any(char not in "0123456789abcdef" for char in run_id)):
@@ -251,6 +286,8 @@ def build_plan(*, run_id: str | None = None, created_utc: str | None = None) -> 
         "gitExecutable": {"path": str(GIT_PATH), "sha256": git_hash,
                           "versionLabel": EXPECTED_GIT_VERSION_LABEL,
                           "versionObservation": "PENDING_EXECUTE_GATE"},
+        "pythonExecutable": python_identity,
+        "pythonPinRule": "The external launcher must hash and compare the launch and optional base interpreter images before starting this harness; the running harness cannot authenticate its already-running interpreter. Recheck both identities before fixture staging and immediately before every native child launch. Protected host runtime remains a precondition.",
         "rootIdentityAuthority": "identify_source_root on the exclusively created fixture before every observation and cleanup",
         "approvedFixtureFiles": [{"path": f.path, "bytes": f.size_bytes, "sha256": f.sha256}
                                   for f in files],
@@ -568,6 +605,7 @@ def _execute_plan(plan: dict[str, object], plan_sha256: str) -> dict[str, object
     failure_code: str | None = None
     observations: dict[str, object] = {}
     git_hash = plan["gitExecutable"]["sha256"]
+    python_identity = plan["pythonExecutable"]
     pin = TrustedGitExecutable(GIT_PATH, git_hash, EXPECTED_GIT_VERSION_LABEL)
     env = _minimal_environment(GIT_PATH)
     fixture_created = False
@@ -597,7 +635,7 @@ def _execute_plan(plan: dict[str, object], plan_sha256: str) -> dict[str, object
         }
         child_diagnostics.append(record)
         try:
-            process = subprocess.Popen(*args, **kwargs)
+            process = _launch_checked_python(python_identity, subprocess.Popen, *args, **kwargs)
         except Exception as exc:
             record["launchErrorClass"] = type(exc).__name__
             raise
@@ -646,6 +684,8 @@ def _execute_plan(plan: dict[str, object], plan_sha256: str) -> dict[str, object
         return output
 
     try:
+        if _python_identity() != python_identity:
+            raise ValueError("PYTHON_PIN_CHANGED")
         # Only create the two direct containers after validating the existing anchor.
         phase = "prepare-owned-containers"
         verification = WORKSPACE / ".local/verification"
