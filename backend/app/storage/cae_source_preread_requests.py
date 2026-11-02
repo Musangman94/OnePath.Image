@@ -1,8 +1,8 @@
 """Durable metadata-only pending requests for a proposed CAE source read.
 
 This store records caller-supplied identity metadata and a validated path-only
-scope. It does not authenticate, establish owner intent, issue a grant, or read
-source files. Only decline and expiry are supported terminal decisions.
+scope. It does not authenticate, establish owner intent, or read source files.
+Request-bound grant issuance is tracked separately as metadata.
 """
 
 from __future__ import annotations
@@ -17,7 +17,8 @@ import uuid
 
 from app.services.cae_source_capture_scope import SourceCaptureScopeV1
 from app.services.cae_source_files import SourceReadLimits
-from app.storage.cae_source_approvals import RootIdentity
+from app.storage.cae_source_approvals import RootIdentity, canonical_source_capture_selection
+from app.storage import cae_source_preread_issuances as issuances
 
 
 _TABLE = "cae_source_preread_requests"
@@ -291,6 +292,7 @@ def initialize(connection: sqlite3.Connection) -> None:
         )
     except sqlite3.Error:
         _fail("DATABASE_FAILURE")
+    issuances.initialize(connection)
 
 
 def create_request(
@@ -343,7 +345,35 @@ def get_request(connection: sqlite3.Connection, request_id: str) -> SourcePrerea
         ).fetchone()
     except sqlite3.Error:
         _fail("DATABASE_FAILURE")
-    return _row_record(row)
+    record = _row_record(row)
+    payload = record.as_dict()
+    auth = payload["authScope"]
+    selection = canonical_source_capture_selection(
+        _decode_scope(payload["captureScope"]), owner_id=auth["ownerId"],
+        principal_id=auth["principalId"], client_id=auth["clientId"],
+        session_id=auth["sessionFingerprint"],
+    )
+    link = issuances.find(
+        connection, request_id=record.request_id, request_sha256=record.record_sha256,
+        selection_json=selection, request_expires_at=record.expires_at,
+    )
+    if link is not None:
+        return SourcePrereadRequestRecordV1(
+            record.request_id, record.revision, "issued", record.record_sha256,
+            record.record_bytes, record.created_at, record.expires_at, record.decided_at,
+        )
+    return record
+
+
+def scope_from_request(record: SourcePrereadRequestRecordV1) -> SourceCaptureScopeV1:
+    """Rebuild scope only from a validated immutable request record."""
+    if type(record) is not SourcePrereadRequestRecordV1:
+        _fail("REQUEST_CORRUPT")
+    payload = _validate_payload(
+        record.record_bytes, record.record_sha256, record.request_id,
+        record.created_at, record.expires_at,
+    )
+    return _decode_scope(payload["captureScope"])
 
 
 def _decide(
@@ -404,5 +434,5 @@ def expire_request(
 __all__ = [
     "DEFAULT_TTL_SECONDS", "MAX_REQUEST_BYTES", "MAX_TTL_SECONDS",
     "SourcePrereadRequestError", "SourcePrereadRequestRecordV1", "create_request",
-    "decline_request", "expire_request", "get_request", "initialize",
+    "decline_request", "expire_request", "get_request", "initialize", "scope_from_request",
 ]
