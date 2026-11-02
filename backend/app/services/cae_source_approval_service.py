@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import hashlib
+import itertools
 from typing import Callable
 
 from app.services.local_auth_service import (
@@ -23,11 +25,13 @@ from app.storage.cae_source_approvals import (
     RootIdentity,
     SourceApprovalError,
     SourceSelection,
+    canonical_source_capture_selection,
     consume_capture_approval,
     consume_approval,
     issue_capture_approval,
     issue_approval,
 )
+from app.storage import cae_source_read_attempts as read_attempts
 import sqlite3
 
 
@@ -76,6 +80,9 @@ class SourceCaptureApprovalGrantV2:
 
     scope: SourceCaptureScopeV1
     approval: IssuedApproval
+
+
+_READ_ATTEMPT_SAVEPOINTS = itertools.count()
 
 
 class SourceApprovalService:
@@ -204,6 +211,54 @@ class SourceApprovalService:
             client_id=proof.stored_client_id, session_id=proof.session_fingerprint,
             now=self._now(),
         )
+
+    def consume_preread_capture_for_read(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        session_token: str | None,
+        scope: SourceCaptureScopeV1,
+        approval: IssuedApproval,
+    ) -> read_attempts.ConsumedReadAttemptV1:
+        """Atomically consume v2 approval and record its non-authoritative marker.
+
+        The caller owns the outer BEGIN IMMEDIATE transaction and its commit.
+        The result is provisional until that commit succeeds and says nothing
+        about whether a reader was invoked or bytes were captured.
+        """
+        if not isinstance(connection, sqlite3.Connection) or not connection.in_transaction:
+            raise SourceApprovalError("TRANSACTION_REQUIRED")
+        savepoint = f"cae_preread_attempt_{next(_READ_ATTEMPT_SAVEPOINTS)}"
+        try:
+            connection.execute(f"SAVEPOINT {savepoint}")
+        except sqlite3.Error:
+            raise SourceApprovalError("DATABASE_FAILURE") from None
+        try:
+            self.consume_preread_capture(
+                connection, session_token=session_token, scope=scope, approval=approval,
+            )
+            proof = self.auth_service.authenticate_session(session_token, connection=connection)
+            principal_id = proof.owner.principal.id
+            payload = canonical_source_capture_selection(
+                scope, owner_id=principal_id, principal_id=principal_id,
+                client_id=proof.stored_client_id, session_id=proof.session_fingerprint,
+            )
+            marker = read_attempts.record_consumed_marker(
+                connection, approval_id=approval.approval_id,
+                selection_json=payload,
+                selection_sha256=hashlib.sha256(payload).hexdigest(),
+            )
+            connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+            return marker
+        except BaseException as exc:
+            try:
+                connection.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+            except BaseException:
+                raise SourceApprovalError("TRANSACTION_STATE_UNCERTAIN") from None
+            if isinstance(exc, (SourceApprovalError, AuthServiceError)):
+                raise
+            raise SourceApprovalError("DATABASE_FAILURE") from None
 
 
 __all__ = [

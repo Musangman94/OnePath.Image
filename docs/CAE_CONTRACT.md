@@ -115,6 +115,10 @@ Independent review reports 24 focused tests and cross-protocol/concurrent tempor
 
 This binding remains dormant: no trusted human-confirmation path, read-start durable lifecycle, commit-before-read controller, source reader, or route is wired. Consuming sets `consumed_at` inside the caller's transaction, so that mark remains rollbackable until commit. A trusted owner confirmation and one-use durable consume before any read remain required; this does not activate source capture.
 
+### Dormant consumed-for-read marker
+
+`consume_preread_capture_for_read` uses a savepoint to atomically consume the exact v2 `onepath.preread-source-capture` ledger binding and insert a marker linked by approval ID and selection hash. Its returned DTO is provisional until the caller commits the outer transaction; the marker records consumption only and proves neither owner intent nor a read or captured bytes. If savepoint recovery leaves transaction state uncertain, abort and do not start a read. This component is inactive: there is no trusted owner confirmation, commit-before-read controller, reader, runtime integration, or owner-database adoption. Direct deletion of ledger rows could orphan markers, so retention must be defined before cleanup. Engineering reports 28 local tests; independent targeted retesting passed 10 after a finding and fix. Store SHA-256 [`cae_source_read_attempts.py`](../backend/app/storage/cae_source_read_attempts.py): `F4C59F75B537DB47B5B87564B92642226F382C5279B591C711567A0BB8B8687E`; adapter SHA-256 [`cae_source_approval_service.py`](../backend/app/services/cae_source_approval_service.py): `5BB2E4EFD031E4B2FFC66D9765BFC58247CE39A017F7E42DAA80DDE956096632`; test SHA-256 [`test_cae_source_read_attempts.py`](../backend/tests/test_cae_source_read_attempts.py): `79AB2113D85007092BDE21985BDC2E92342135A4AD8637C91E57977E1B5FCD19`.
+
 ## 2. V1 CAE boundary
 
 CAE has five engines: **Experience**, **Reflection**, **Assimilation**, **Evaluation**, and **EvolutionController**. Parallel, Idle, and Forced are scheduling modes, not engines. V1 introduces no sixth engine, framework, database, or separate authority layer.
