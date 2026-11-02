@@ -1,6 +1,6 @@
 # OnePath Memory Fabric foundation
 
-Updated: 31 October 2026, Asia/Kuala_Lumpur.
+Updated: 2 November 2026, Asia/Kuala_Lumpur.
 
 **Owner-approved direction:** OnePath Memory Fabric is the working memory
 architecture; TaskContextCompiler is a major research and engineering component.
@@ -8,6 +8,20 @@ This supersedes GraphRAG as the required foundation. GraphRAG and Graphiti remai
 optional candidates. This document owns R4 memory semantics, prototype scope,
 and evaluation. The CAE contract remains authoritative for CAE authority,
 isolation, R4/R5 gates, and promotion.
+
+## North Star memory-boundary reconciliation — 2 November 2026
+
+See [the architecture reconciliation](ARCHITECTURE.md#owner-selected-north-star-reconciliation--2-november-2026) for
+the owner’s direction and research status; this document remains authoritative for memory semantics. The four
+responsibilities are Integrity Kernel (the trusted boundary), Memory Formation, Memory Recall, and CAE Evolution;
+they are distinct from the four categories: Working, Episodic, Semantic, and Procedural. Formation and Recall
+policies may evolve through the same five existing CAE engines, not a new framework. Derived capability references
+may include only accepted evidence; contradictory, failed, superseded, and stale evidence stays historically visible
+with version/time, scope, and deletion controls. TaskContextCompiler must reserve current instructions, permissions,
+and tokenizer-verified tokens, and explain required omissions; existing completeness and authorization rules remain
+binding. FTS5 remains the first functional recall path. Atlas, Collections, Chronicle, and Constellation are
+permission-filtered presentations with accessible text/list fallback, not stores or new authority. Existing
+retrieval, evaluation, frozen E1, and token-pilot details remain unchanged.
 
 **Current implementation:** explicit Markdown/Obsidian snapshot import and its
 HTTP endpoints below exist in source. Retrieval, cross-session recall through

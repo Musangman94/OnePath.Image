@@ -1,6 +1,6 @@
 # OnePath.Image architecture and delivery plan
 
-Updated: 31 October 2026, Asia/Kuala_Lumpur.
+Updated: 2 November 2026, Asia/Kuala_Lumpur.
 
 Status: owner requirements and architecture plan; implementation and verification status are stated separately below. This document does not authorize installation, execution, deployment, or unrelated repository changes.
 
@@ -74,6 +74,124 @@ alternatives, not required dependencies. Atlas is a permission-filtered
 presentation of canonical records, not another memory store. The five CAE
 engines and three scheduling modes remain unchanged; [CAE R0–R8 gates](CAE_CONTRACT.md)
 continue to govern authority, isolation, and promotion.
+
+## Owner-selected North Star reconciliation — 2 November 2026
+
+**Source and status.** The owner selected “OnePath.Image — The Reconciled North Star” as the next OnePath.Image
+direction. The supplied HTML is `X:\DIVINE.POINT\OnePath_Image_North_Star_Interactive.html` (157,019 bytes; SHA-256
+`2BB06279FDCA5A9158DB07E0C386C93285A806677C090BC7EC726C1E2D111C98`). The companion PDF is
+`X:\DIVINE.POINT\OnePath_Image_North_Star_Dark.pdf` (643,885 bytes; SHA-256
+`3A45DCDEDB214E149559BAA8D587DE5B90831F8C9F65F217B2B4CB60D7140104`); this record fingerprints it, without claiming
+independent content review or equivalence to the HTML. Both sources are outside Git. Their absence never licenses
+assumptions: this repository’s architecture and contracts remain canonical product specifications. HTML chapters 15
+(company rework) and 16 (partial historical R1 audit) are historical, outside this product amendment. Current R1
+remains incomplete; Guide commit `480f5966` corrected harness-test attribution and does not establish runtime
+acceptance.
+
+The North Star selects product direction; its engineering methods below remain proposals or research hypotheses
+unless separately contracted, implemented, and evidenced. Nothing here changes security gates, owner authority,
+application DTOs, dependencies, databases, or services.
+
+**Product identity and continuity.** OnePath.Image is a local-first, model-independent, bio-adaptive agentic
+environment that seeks useful capability within a user’s actual resources. A hardware or model change must not
+discard missions, memory, identity, evidence, permissions, or history. Preserve Windows and native Ubuntu targets;
+Tauri 2 with the shared HTML/JavaScript interface, FastAPI, SQLite, EXL3/GGUF adapters, cloud only with existing
+consent and budget, and the three selected harnesses (Atomic, Hermes, DeepSeek Harness). Matrix and Navi inform
+fiction and design; they grant no authority and do not imply replication, unrestricted autonomy, or product
+behavior.
+
+**Logical responsibility planes.** These are five views over existing owners, not five processes or databases:
+
+1. **Experience:** existing frontend and accessible status, approval, stop, and recovery controls.
+2. **Cognitive control:** native Gandalf owns mission orchestration and bounded strategy selection.
+3. **Execution and resources:** existing harnesses, providers, tools, admission, and runtime guards perform
+authorized work.
+4. **Continuity:** Memory Fabric, TaskContextCompiler, and derived capability references carry scoped context and
+accepted evidence.
+5. **Trusted Core (cross-cutting):** existing authentication, authorization, admission, fencing, canonical state,
+and activation controls remain authoritative.
+
+Current source examples are `backend/app/runtime/resources.py` (Windows-only samples and `OperationGuard`),
+`backend/app/services/model_lifecycle.py` (`ModelLifecycleManager` and `run_admission`), and
+`backend/app/schemas/cae.py` (`ResearchProposalV1` seam). Their presence is not a complete Fabric, cross-cutting
+enforcement, or native Ubuntu proof. New concepts map to current owners until a bounded contract authorizes a
+change.
+
+**Adaptive lifecycle and timescales.** Treat Sense → Orient → Organize → Act → Evaluate → Adapt as a proposed
+decision loop. Keep observed inputs, proposed strategy, trusted execution/admission, and outcome evidence distinct.
+Immediate deterministic actions stay available without model inference; mission-level choices belong to native
+Gandalf; longer-term changes remain inside the existing governed CAE path. No always-thinking model, competing
+orchestrator, or new scheduler is implied. A bounded worker may recover ordinary local defects; scope, security,
+authority, or architecture changes escalate. Reconcile uncertain side effects before retrying.
+
+**Resource and capability adaptation.** Integrate live samples, provider capability, tokenizer/context limits, and
+resource admission through existing guarded owners. Report installed, available, required, and observed separately;
+unknown measurements are not free capacity. The initial shared-backend policy remains one heavy local generation at
+a time, with safe independent tool I/O; foreground work may preempt background work only through existing controls.
+Cancellation requested is not quiescence: retain the fence while execution may still be active or uncertain.
+CPU-only, multi-GPU, and cluster profiles are future-compatible research directions, not V1 hardware guarantees.
+Cloud consent, budget, and actual Windows/native-Ubuntu proof gates remain unchanged.
+
+**Derived Capability Ledger (proposal).** A minimal derived view may reference accepted task/run/artifact/evaluation
+evidence and record task family, prerequisites, model/harness/tool/source versions, environment/resource profile,
+limits, failures, confidence basis, and requalification reason. Installed, configured, or “ready” is not
+demonstrated competence. Version or model changes downgrade applicability without erasing history. This is not a
+duplicate database, approval ledger, permission grant, or universal transfer claim. Retention, deletion propagation,
+and scope follow canonical evidence and memory controls. Planning values do not alter app v1 DTOs.
+
+**Reconciliation within the existing R0–R8 sequence.** This amendment adds no milestone:
+
+- **R0:** this dated documentation amendment only; no runtime or owner-acceptance claim.
+- **R1:** existing trust, isolation, arbitrary-code controls, and current native gate remain first; no bio-algorithm
+  is added to the gate.
+- **R2:** propose native mission jobs, resource-aware strategy selection, and a minimal derived-capability view
+  inside existing jobs. Gather one bounded trace of observations, chosen strategy, trusted execution, and outcome;
+  reconcile unknown side effects. Immediate deterministic work must not require inference.
+- **R3:** prove all three harnesses against the shared backend, including cancellation/quiescence behavior.
+- **R4:** preserve governed FTS5 recall first, then Formation/Recall/context and derived-skill evidence under the
+  existing Memory Foundation contract.
+- **R5:** retain frozen E1 and the operational pilot, including rejection, no-change, interruption,
+  rollback/recovery, and owner decision.
+- **R6:** require explicit cloud consent and budget; keep Fusion and any bounded DevHub trial within existing owner
+  approval.
+- **R7:** package and prove both target platforms; **R8:** fresh final verification remains independent.
+
+Backend owns contracts, admission, derived views, and CAE integration; Frontend owns honest capability/cancellation
+states plus accessible Atlas text/list and reduced-motion paths; Guide owns evidence and documentation; Architecture
+remains sole engineering lead and integration/acceptance authority. Trust → R2 jobs is the critical path; R4 recall
+precedes retrieval pilots, while offline E1 need not wait for R4. New methods need a bounded engineering contract
+and schema freeze before code. Advanced bio-algorithms, clusters, AGI hypotheses, and a two-times-productivity
+result are research, not V1 blockers.
+
+**Research register (context, not adoption or OnePath proof):**
+- **AlphaEvolve (16 Jun 2025; white paper):** evaluator-guided executable search is a mechanism to investigate;
+  reported results do not establish OnePath transfer or performance. [Paper](https://arxiv.org/abs/2506.13131)
+- **Google Chrysalis (22 Oct 2026; vendor research):** studies governed self-evolution on simulated infrastructure;
+  this grants no live patch authority and is not local OnePath evidence.
+  [Article](https://developers.googleblog.com/en/architecting-governed-self-evolving-ai-agents-on-gemini-agent-platform/)
+- **NVIDIA AVO (21 Aug 2026; vendor report):** reports public ARC-3 performance; this is not private-task or AGI
+  evidence.
+  [Article](https://developer.nvidia.com/blog/nvidia-avo-reaches-100-on-arc-agi-3-demonstrating-a-frontier-level-general-purpose-architecture-for-long-horizon-autonomous-agents/)
+- **AAAI bio-autonomic agents (14 Mar 2026; peer-reviewed abstract):** describes MAPE-K/immune mechanisms; it is not
+  OnePath proof and does not justify decentralized authority.
+  [Paper](https://ojs.aaai.org/index.php/AAAI/article/view/41065)
+- **Agent scaling (180-configuration study submitted 9 Dec 2025, revised 8 Apr 2026; Google summary 28 Jan 2026):**
+  topology effects depend on task structure; this is not a universal scaling law.
+  [Study](https://arxiv.org/abs/2512.08296)
+- **Magentic-One (2024 paper):** examines orchestrated specialists, progress tracking, and replanning; it does not
+  establish a OnePath gain. [Paper](https://arxiv.org/abs/2411.04468)
+- **Magentic-Lite (21 May 2026; vendor experimental research):** explores small-model codesign; results remain
+  experimental and are not a product-performance claim.
+  [Article](https://www.microsoft.com/en-us/research/blog/magenticlite-magenticbrain-fara1-5-an-agentic-experience-optimized-for-small-models/)
+- **EvoAgentX (2025 EMNLP demo):** studies evaluation-driven workflow optimization; a demo is not a OnePath
+  evaluation. [Paper](https://aclanthology.org/2025.emnlp-demos.47/)
+
+Treat these as mechanisms to investigate, not dependencies or performance promises. Compare methods on matched
+models, tools, tasks, resource limits, and full cost including failures; separate equal-resource, scale-up, and
+held-out-transfer hypotheses. Open research is welcome; deployment remains governed.
+
+**Open decisions.** Minimum supported hardware and any experimental algorithm/cluster work need bounded evidence
+and, for consequential commitments, an owner decision. Do not invent a release blocker or public benchmark promise.
 
 ## Observed repository state
 
