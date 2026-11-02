@@ -228,6 +228,43 @@ def canonical_source_selection(selection: SourceSelection) -> bytes:
     return _canonical(_selection_value(selection))
 
 
+def canonical_source_capture_selection(
+    scope: object,
+    *,
+    owner_id: str,
+    principal_id: str,
+    client_id: str,
+    session_id: str,
+) -> bytes:
+    """Return a v2 path-only binding without changing v1 selection serialization."""
+    # Import lazily because the pure scope contract reuses RootIdentity from
+    # this module. Exact type prevents a caller subclass from replacing its
+    # canonical representation.
+    from app.services.cae_source_capture_scope import SourceCaptureScopeV1
+
+    if type(scope) is not SourceCaptureScopeV1:
+        _fail()
+    try:
+        scope_bytes = scope.canonical_bytes()
+        scope_value = json.loads(scope_bytes.decode("utf-8"))
+        if _canonical(scope_value) != scope_bytes:
+            _fail()
+        value = {
+            "schemaVersion": 2,
+            "selectionKind": "onepath.preread-source-capture",
+            "authScope": {
+                "ownerId": _text(owner_id),
+                "principalId": _text(principal_id),
+                "clientId": _text(client_id),
+                "sessionId": _text(session_id),
+            },
+            "captureScope": scope_value,
+        }
+        return _canonical(value)
+    except (AttributeError, TypeError, ValueError, UnicodeError, json.JSONDecodeError):
+        raise SourceApprovalError("INVALID_APPROVAL") from None
+
+
 def _require_connection(connection: sqlite3.Connection) -> None:
     if not isinstance(connection, sqlite3.Connection):
         raise SourceApprovalError("INVALID_CONNECTION")
@@ -264,10 +301,42 @@ def issue_approval(
 ) -> IssuedApproval:
     """Persist an approval binding; caller must already confirm owner and selection."""
     _require_transaction(connection)
+    return _issue_bound_payload(
+        connection, canonical_source_selection(selection), now=now, ttl_seconds=ttl_seconds,
+    )
+
+
+def issue_capture_approval(
+    connection: sqlite3.Connection,
+    scope: object,
+    *,
+    owner_id: str,
+    principal_id: str,
+    client_id: str,
+    session_id: str,
+    now: datetime,
+    ttl_seconds: int = DEFAULT_TTL_SECONDS,
+) -> IssuedApproval:
+    """Store a v2 capture binding in the existing one-use ledger table."""
+    _require_transaction(connection)
+    payload = canonical_source_capture_selection(
+        scope, owner_id=owner_id, principal_id=principal_id,
+        client_id=client_id, session_id=session_id,
+    )
+    return _issue_bound_payload(connection, payload, now=now, ttl_seconds=ttl_seconds)
+
+
+def _issue_bound_payload(
+    connection: sqlite3.Connection,
+    payload: bytes,
+    *,
+    now: datetime,
+    ttl_seconds: int,
+) -> IssuedApproval:
+    _require_transaction(connection)
     if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= MAX_TTL_SECONDS:
         raise SourceApprovalError("INVALID_TTL")
     stamp = _timestamp(now)
-    payload = _canonical(_selection_value(selection))
     digest = hashlib.sha256(payload).hexdigest()
     secret = secrets.token_bytes(32)
     secret_digest = hashlib.sha256(secret).digest()
@@ -296,13 +365,45 @@ def consume_approval(
 ) -> None:
     """Consume once iff secret, full selection, auth scope, and expiry still match."""
     _require_transaction(connection)
+    _consume_bound_payload(
+        connection, approval, canonical_source_selection(selection), now=now,
+    )
+
+
+def consume_capture_approval(
+    connection: sqlite3.Connection,
+    approval: IssuedApproval,
+    scope: object,
+    *,
+    owner_id: str,
+    principal_id: str,
+    client_id: str,
+    session_id: str,
+    now: datetime,
+) -> None:
+    """Consume a v2 path-only capture grant in the existing ledger."""
+    _require_transaction(connection)
+    payload = canonical_source_capture_selection(
+        scope, owner_id=owner_id, principal_id=principal_id,
+        client_id=client_id, session_id=session_id,
+    )
+    _consume_bound_payload(connection, approval, payload, now=now)
+
+
+def _consume_bound_payload(
+    connection: sqlite3.Connection,
+    approval: IssuedApproval,
+    payload: bytes,
+    *,
+    now: datetime,
+) -> None:
+    _require_transaction(connection)
     if not isinstance(approval, IssuedApproval):
         raise SourceApprovalError("INVALID_APPROVAL")
     if (not isinstance(approval.secret, bytes) or len(approval.secret) != 32
             or not isinstance(approval.approval_id, str) or not _ID.fullmatch(approval.approval_id)):
         raise SourceApprovalError("INVALID_APPROVAL")
     stamp = _timestamp(now)
-    payload = _canonical(_selection_value(selection))
     digest = hashlib.sha256(payload).hexdigest()
     secret_digest = hashlib.sha256(approval.secret).digest()
     try:

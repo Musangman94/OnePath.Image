@@ -16,13 +16,16 @@ from app.services.local_auth_service import (
     LocalAuthService,
     _AuthenticatedSessionProof,
 )
+from app.services.cae_source_capture_scope import SourceCaptureScopeV1
 from app.storage.cae_source_approvals import (
     ApprovedFile,
     IssuedApproval,
     RootIdentity,
     SourceApprovalError,
     SourceSelection,
+    consume_capture_approval,
     consume_approval,
+    issue_capture_approval,
     issue_approval,
 )
 import sqlite3
@@ -64,6 +67,14 @@ class SourceApprovalGrantV1:
     """Bound selection and one-use secret for a trusted internal caller."""
 
     selection: SourceSelection
+    approval: IssuedApproval
+
+
+@dataclass(frozen=True)
+class SourceCaptureApprovalGrantV2:
+    """One-use path-only grant; this record is not proof of human intent."""
+
+    scope: SourceCaptureScopeV1
     approval: IssuedApproval
 
 
@@ -151,9 +162,53 @@ class SourceApprovalService:
         consume_approval(connection, approval, selection, now=self._now())
         return selection
 
+    def issue_preread_capture(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        session_token: str | None,
+        scope: SourceCaptureScopeV1,
+        ttl_seconds: int = 300,
+    ) -> SourceCaptureApprovalGrantV2:
+        """Issue v2 path-only binding after a separate trusted owner action.
+
+        Session authentication is not human confirmation. This adapter has no
+        trusted confirmation caller and must remain dormant until one exists.
+        """
+        if type(scope) is not SourceCaptureScopeV1:
+            raise SourceApprovalError("INVALID_APPROVAL")
+        proof = self.auth_service.authenticate_session(session_token, connection=connection)
+        principal_id = proof.owner.principal.id
+        approval = issue_capture_approval(
+            connection, scope, owner_id=principal_id, principal_id=principal_id,
+            client_id=proof.stored_client_id, session_id=proof.session_fingerprint,
+            now=self._now(), ttl_seconds=ttl_seconds,
+        )
+        return SourceCaptureApprovalGrantV2(scope, approval)
+
+    def consume_preread_capture(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        session_token: str | None,
+        scope: SourceCaptureScopeV1,
+        approval: IssuedApproval,
+    ) -> None:
+        """Consume only for the exact scope and freshly authenticated session."""
+        if type(scope) is not SourceCaptureScopeV1:
+            raise SourceApprovalError("INVALID_APPROVAL")
+        proof = self.auth_service.authenticate_session(session_token, connection=connection)
+        principal_id = proof.owner.principal.id
+        consume_capture_approval(
+            connection, approval, scope, owner_id=principal_id, principal_id=principal_id,
+            client_id=proof.stored_client_id, session_id=proof.session_fingerprint,
+            now=self._now(),
+        )
+
 
 __all__ = [
     "SourceApprovalGrantV1",
+    "SourceCaptureApprovalGrantV2",
     "SourceApprovalScopeV1",
     "SourceApprovalService",
     "AuthServiceError",

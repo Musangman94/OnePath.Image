@@ -107,6 +107,14 @@ Source SHA-256: `341749C61418ACB64D46A29873C1BB5EC15A707B6D146D140B5DA4B9E8BC38C
 
 This pure, inactive scope builder does not read source bytes, authorize or attest a read, issue or consume a ledger grant, or integrate with UI or runtime flows. Trusted owner confirmation and one-use durable approval consumption before any source read remain unwired. Existing v1 DTOs and contract semantics are preserved.
 
+### Dormant v2 preread approval binding
+
+`SourceApprovalService.issue_preread_capture` and `consume_preread_capture` bind the exact path-only scope to the freshly authenticated owner/principal, client, and session fingerprint in a distinct v2 ledger selection. The existing v1 approval serialization remains unchanged. The session token itself is not persisted.
+
+Independent review reports 24 focused tests and cross-protocol/concurrent temporary-database probes passed. Ledger SHA-256: `18AAB1679902670EA629256E78AED71C2D04B08E82B3B59CD8EB483E994052BE`; adapter SHA-256: `6E8625EE46B056F57EC1BA3B06CAC4873414E18F644F3A6899C9246A6FA1614C`; focused test SHA-256: `E70BBA5E89E3A735B380383D90A2D524233FCFE5D57BEB03138CE41DF6676F13`.
+
+This binding remains dormant: no trusted human-confirmation path, read-start durable lifecycle, commit-before-read controller, source reader, or route is wired. Consuming sets `consumed_at` inside the caller's transaction, so that mark remains rollbackable until commit. A trusted owner confirmation and one-use durable consume before any read remain required; this does not activate source capture.
+
 ## 2. V1 CAE boundary
 
 CAE has five engines: **Experience**, **Reflection**, **Assimilation**, **Evaluation**, and **EvolutionController**. Parallel, Idle, and Forced are scheduling modes, not engines. V1 introduces no sixth engine, framework, database, or separate authority layer.
