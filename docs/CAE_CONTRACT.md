@@ -99,6 +99,14 @@ This is not proof of physical human confirmation. The approved service entrypoin
 
 Engineering reports 8 focused service tests passed in 0.534 seconds. An initial Windows-vs-`windows_ntfs` and nonexistent session-field test failure was corrected. The first independent risk review passed A–E and an injected-CAS rollback check (one test, 0.069 seconds) but failed F on an unhashable decision value; service/store guards were corrected. The second review's targeted F test passed (one test, 0.055 seconds), with the prior A–E evidence retained and all four current source/test hashes matching. These are bounded service-level results, not physical-consent or end-to-end workflow proof. The tests were not rerun for this documentation update. Current source hashes: approval binder `D897779136A34C8BDCA807F7975A04032DE7FB340A8406FA99C68166790A604E`, review store `C484CA6118DA75A51CD73B112EFC3CFD32ECED58AD9918536FA50575C0F0C943`, composite service `138369E94AACC24F2B4C6E852CDBEC9DAC009EB48ADCF57AF7F7FF28394EFBB3`, and tests `628146DDD9A976F110D425B0C8B37FA2D4289C17BFAB3542F3D268F873E54443`.
 
+### Path-only preread scope metadata (inactive)
+
+`SourceCaptureScopeV1` in [`backend/app/services/cae_source_capture_scope.py`](../backend/app/services/cae_source_capture_scope.py) builds an immutable canonical binding of caller-supplied root path and identity metadata, an explicit normalized relative-path set, the fixed built-in source-policy reference, and bounded read limits. Its canonical bytes and SHA-256 bind metadata only. The supplied root identity is not attested or revalidated by this component.
+
+Source SHA-256: `341749C61418ACB64D46A29873C1BB5EC15A707B6D146D140B5DA4B9E8BC38C7`; focused test SHA-256: `0F5B746AA16506FEE61E3C07744DC8765C8AB75D510CB0516B643DF4A9AA1877`. Engineering reports 12 focused local tests passed and a separate focused independent review. This documentation update did not rerun those checks.
+
+This pure, inactive scope builder does not read source bytes, authorize or attest a read, issue or consume a ledger grant, or integrate with UI or runtime flows. Trusted owner confirmation and one-use durable approval consumption before any source read remain unwired. Existing v1 DTOs and contract semantics are preserved.
+
 ## 2. V1 CAE boundary
 
 CAE has five engines: **Experience**, **Reflection**, **Assimilation**, **Evaluation**, and **EvolutionController**. Parallel, Idle, and Forced are scheduling modes, not engines. V1 introduces no sixth engine, framework, database, or separate authority layer.
