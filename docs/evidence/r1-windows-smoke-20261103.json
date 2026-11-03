@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-03",
+  "r1_complete": false,
+  "native_smoke_passed": false,
+  "current_source_sha256": {
+    "backend/app/runtime/win32_jobs.py": "817150ad7e51ab73670ef23ec335a8102c735e409422833cba8057be5706c25f",
+    "backend/app/runtime/windows_appcontainer_smoke.py": "8987e5a2393bc50c0508450fe6b2bdcca34cd4547f6d140b84d8b0f6d1473ced",
+    "backend/tests/test_windows_appcontainer_smoke.py": "4c0010fd9eb8472ab83b69ebdecd9878b4ede9a6c4ccdcc847dbb9187b871eaf",
+    "backend/tests/cae_windows_appcontainer_native_probe.py": "922564dac7d35694abd12455b8af3ccdc70f302c0e7f8282e4dcf4dabd49b33a"
+  },
+  "native_invocations": [
+    {
+      "number": 1,
+      "provenance": {
+        "platform": "Windows-11-10.0.26100-SP0",
+        "python": "3.13.15",
+        "source_sha256": {
+          "backend/app/runtime/win32_jobs.py": "4cbd394ace7778315b2830869059b52ace7155677ade319332cae327588c442d",
+          "backend/app/runtime/windows_appcontainer_smoke.py": "f18353e24352c80645101f5d05c881b0a2b360bec0bc958972674e8969d0c683",
+          "backend/app/runtime/windows_appcontainer_profiles.py": "244dd92ba6ab8f8074578229b49c0d0b8a6c4960c54961b7bc1ee464ec51263d",
+          "backend/app/runtime/windows_appcontainer_token_check.py": "9d91002546447f9269bab0c5a842b77d861338ee7c93768892528c85664f710c",
+          "backend/app/runtime/windows_appcontainer_canary_plan.py": "b2fdb32717bde0d63fd1e094475370184bc371329b3dd1bd6debf3d9dfe0897b",
+          "backend/tests/cae_windows_appcontainer_native_probe.py": "e86eb6304bb353148eeac1aa7bd6aafe659fbe51930c9bac0f51e7ac3fc0be9d"
+        },
+        "limits": "fixed trusted smoke only; not native sandbox acceptance"
+      },
+      "journal": [
+        {
+          "binary_sha256": "23240ef9f8b0a9a324110b1c2331de31dc1b0e08f5359cb707e51a939af56cd3",
+          "event": "begin",
+          "sandbox_attested": false
+        },
+        {
+          "event": "profile_create_intent",
+          "name": "OnePath.CAE.Canary.4a446d7a4275091cd314ad609872f68f"
+        },
+        {
+          "event": "profile_created",
+          "name": "OnePath.CAE.Canary.4a446d7a4275091cd314ad609872f68f"
+        },
+        {
+          "event": "profile_deleted",
+          "name": "OnePath.CAE.Canary.4a446d7a4275091cd314ad609872f68f"
+        },
+        {
+          "automatic_retry_allowed": false,
+          "code": "PROCESS_CREATE_FAILED",
+          "event": "failed"
+        }
+      ],
+      "original_sha256": {
+        "provenance.json": "d9244a7dffe881ee692a087f7c2599b753b1889777f5dd8100070e4e93ebee18",
+        "journal.jsonl": "f7f5c3bf803ca329820b1ec07f8800bf935880092cfd4dce0628316d4750099c"
+      }
+    },
+    {
+      "number": 2,
+      "provenance": {
+        "platform": "Windows-11-10.0.26100-SP0",
+        "python": "3.13.15",
+        "source_sha256": {
+          "backend/app/runtime/win32_jobs.py": "817150ad7e51ab73670ef23ec335a8102c735e409422833cba8057be5706c25f",
+          "backend/app/runtime/windows_appcontainer_smoke.py": "43533568912dd250bada0c1360cab99693624774565692308d8f30934419b70d",
+          "backend/app/runtime/windows_appcontainer_profiles.py": "244dd92ba6ab8f8074578229b49c0d0b8a6c4960c54961b7bc1ee464ec51263d",
+          "backend/app/runtime/windows_appcontainer_token_check.py": "9d91002546447f9269bab0c5a842b77d861338ee7c93768892528c85664f710c",
+          "backend/app/runtime/windows_appcontainer_canary_plan.py": "b2fdb32717bde0d63fd1e094475370184bc371329b3dd1bd6debf3d9dfe0897b",
+          "backend/tests/cae_windows_appcontainer_native_probe.py": "e86eb6304bb353148eeac1aa7bd6aafe659fbe51930c9bac0f51e7ac3fc0be9d"
+        },
+        "limits": "fixed trusted smoke only; not native sandbox acceptance"
+      },
+      "journal": [
+        {
+          "binary_sha256": "23240ef9f8b0a9a324110b1c2331de31dc1b0e08f5359cb707e51a939af56cd3",
+          "event": "begin",
+          "sandbox_attested": false
+        },
+        {
+          "event": "profile_create_intent",
+          "name": "OnePath.CAE.Canary.9ec8df88cb9a45c771f630feeca950fd"
+        },
+        {
+          "event": "profile_created",
+          "name": "OnePath.CAE.Canary.9ec8df88cb9a45c771f630feeca950fd"
+        },
+        {
+          "event": "profile_deleted",
+          "name": "OnePath.CAE.Canary.9ec8df88cb9a45c771f630feeca950fd"
+        },
+        {
+          "automatic_retry_allowed": false,
+          "code": "PROCESS_CREATE_FAILED",
+          "event": "failed",
+          "native_error": 203
+        }
+      ],
+      "original_sha256": {
+        "provenance.json": "5720558366b48d586c2e86f55e132d9ba6be2a20af32ca56a7d963a785b8cfdd",
+        "journal.jsonl": "4d7fe58af3abd5d16a8c7f55026abdd678b18b164713b99b963333b42ec02758"
+      }
+    },
+    {
+      "number": 3,
+      "provenance": {
+        "platform": "Windows-11-10.0.26100-SP0",
+        "python": "3.13.15",
+        "source_sha256": {
+          "backend/app/runtime/win32_jobs.py": "817150ad7e51ab73670ef23ec335a8102c735e409422833cba8057be5706c25f",
+          "backend/app/runtime/windows_appcontainer_smoke.py": "1f0f6a3470fca744e8bdfe07c09c84c30c3cd0e1ceae926498aaaf5bddeb49e4",
+          "backend/app/runtime/windows_appcontainer_profiles.py": "244dd92ba6ab8f8074578229b49c0d0b8a6c4960c54961b7bc1ee464ec51263d",
+          "backend/app/runtime/windows_appcontainer_token_check.py": "9d91002546447f9269bab0c5a842b77d861338ee7c93768892528c85664f710c",
+          "backend/app/runtime/windows_appcontainer_canary_plan.py": "b2fdb32717bde0d63fd1e094475370184bc371329b3dd1bd6debf3d9dfe0897b",
+          "backend/tests/cae_windows_appcontainer_native_probe.py": "e86eb6304bb353148eeac1aa7bd6aafe659fbe51930c9bac0f51e7ac3fc0be9d"
+        },
+        "limits": "fixed trusted smoke only; not native sandbox acceptance"
+      },
+      "journal": [
+        {
+          "binary_sha256": "23240ef9f8b0a9a324110b1c2331de31dc1b0e08f5359cb707e51a939af56cd3",
+          "event": "begin",
+          "sandbox_attested": false
+        },
+        {
+          "event": "profile_create_intent",
+          "name": "OnePath.CAE.Canary.6298b2e109b1d7573e1a65b5e59c3598"
+        },
+        {
+          "event": "profile_created",
+          "name": "OnePath.CAE.Canary.6298b2e109b1d7573e1a65b5e59c3598"
+        },
+        {
+          "event": "profile_deleted",
+          "name": "OnePath.CAE.Canary.6298b2e109b1d7573e1a65b5e59c3598"
+        },
+        {
+          "automatic_retry_allowed": false,
+          "code": "SMOKE_CHILD_FAILED",
+          "event": "failed",
+          "native_error": null
+        }
+      ],
+      "original_sha256": {
+        "provenance.json": "e955d036b0704a330cd2babe33fdc974428c5d5c59baed2480071970dea9cf50",
+        "journal.jsonl": "69c9aff9c817253398dacff580deea5120793382672b09546aced9b3f7e9e857"
+      }
+    },
+    {
+      "number": 4,
+      "provenance": {
+        "platform": "Windows-11-10.0.26100-SP0",
+        "python": "3.13.15",
+        "source_sha256": {
+          "backend/app/runtime/win32_jobs.py": "817150ad7e51ab73670ef23ec335a8102c735e409422833cba8057be5706c25f",
+          "backend/app/runtime/windows_appcontainer_smoke.py": "efb93b55d0e6b5539e848643c7edbf7b7bb374c3ee9aa6f11d83937131b7afd9",
+          "backend/app/runtime/windows_appcontainer_profiles.py": "244dd92ba6ab8f8074578229b49c0d0b8a6c4960c54961b7bc1ee464ec51263d",
+          "backend/app/runtime/windows_appcontainer_token_check.py": "9d91002546447f9269bab0c5a842b77d861338ee7c93768892528c85664f710c",
+          "backend/app/runtime/windows_appcontainer_canary_plan.py": "b2fdb32717bde0d63fd1e094475370184bc371329b3dd1bd6debf3d9dfe0897b",
+          "backend/tests/cae_windows_appcontainer_native_probe.py": "e86eb6304bb353148eeac1aa7bd6aafe659fbe51930c9bac0f51e7ac3fc0be9d"
+        },
+        "limits": "fixed trusted smoke only; not native sandbox acceptance"
+      },
+      "journal": [
+        {
+          "binary_sha256": "23240ef9f8b0a9a324110b1c2331de31dc1b0e08f5359cb707e51a939af56cd3",
+          "event": "begin",
+          "sandbox_attested": false
+        },
+        {
+          "event": "profile_create_intent",
+          "name": "OnePath.CAE.Canary.00ce8e986cc552836b22cac970e37ae3"
+        },
+        {
+          "event": "profile_created",
+          "name": "OnePath.CAE.Canary.00ce8e986cc552836b22cac970e37ae3"
+        },
+        {
+          "atomic_job_membership": true,
+          "capability_count": 0,
+          "event": "child_verified_and_resumed",
+          "is_appcontainer": true,
+          "profile_sid_matches": true,
+          "quota_readback_matched": true
+        },
+        {
+          "event": "child_exited",
+          "exit_code": 3221225794,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0
+        },
+        {
+          "event": "profile_deleted",
+          "name": "OnePath.CAE.Canary.00ce8e986cc552836b22cac970e37ae3"
+        },
+        {
+          "automatic_retry_allowed": false,
+          "code": "SMOKE_CHILD_FAILED",
+          "event": "failed",
+          "native_error": null
+        }
+      ],
+      "original_sha256": {
+        "provenance.json": "8b51feb4d1ba209f646417ae6e5e032817c9070dc28a2f613cfef2663d39b51f",
+        "journal.jsonl": "c15fe8308d1bd95c23eded627efa486b3aa1668225b77d56e5a92747644fa36c"
+      }
+    },
+    {
+      "number": 5,
+      "provenance": {
+        "platform": "Windows-11-10.0.26100-SP0",
+        "python": "3.13.15",
+        "source_sha256": {
+          "backend/app/runtime/win32_jobs.py": "817150ad7e51ab73670ef23ec335a8102c735e409422833cba8057be5706c25f",
+          "backend/app/runtime/windows_appcontainer_smoke.py": "8987e5a2393bc50c0508450fe6b2bdcca34cd4547f6d140b84d8b0f6d1473ced",
+          "backend/app/runtime/windows_appcontainer_profiles.py": "244dd92ba6ab8f8074578229b49c0d0b8a6c4960c54961b7bc1ee464ec51263d",
+          "backend/app/runtime/windows_appcontainer_token_check.py": "9d91002546447f9269bab0c5a842b77d861338ee7c93768892528c85664f710c",
+          "backend/app/runtime/windows_appcontainer_canary_plan.py": "b2fdb32717bde0d63fd1e094475370184bc371329b3dd1bd6debf3d9dfe0897b",
+          "backend/tests/cae_windows_appcontainer_native_probe.py": "922564dac7d35694abd12455b8af3ccdc70f302c0e7f8282e4dcf4dabd49b33a"
+        },
+        "limits": "fixed trusted smoke only; not native sandbox acceptance"
+      },
+      "journal": [
+        {
+          "binary_sha256": "15cd209c995b7d3009c91ca40892d5b8f1fb162f3e5f10716642ea278e8e0d7b",
+          "event": "begin",
+          "sandbox_attested": false
+        },
+        {
+          "event": "profile_create_intent",
+          "name": "OnePath.CAE.Canary.ed4ec426dfe5753d8cec05440bed41dc"
+        },
+        {
+          "event": "profile_created",
+          "name": "OnePath.CAE.Canary.ed4ec426dfe5753d8cec05440bed41dc"
+        },
+        {
+          "atomic_job_membership": true,
+          "capability_count": 0,
+          "event": "child_verified_and_resumed",
+          "is_appcontainer": true,
+          "profile_sid_matches": true,
+          "quota_readback_matched": true
+        },
+        {
+          "event": "child_exited",
+          "exit_code": 3221225794,
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0
+        },
+        {
+          "event": "profile_deleted",
+          "name": "OnePath.CAE.Canary.ed4ec426dfe5753d8cec05440bed41dc"
+        },
+        {
+          "automatic_retry_allowed": false,
+          "code": "SMOKE_CHILD_FAILED",
+          "event": "failed",
+          "native_error": null
+        }
+      ],
+      "original_sha256": {
+        "provenance.json": "04e61d83e5779ad169fbcad06149ff2e928c0ed2663956d1bfbabfc7ca9de438",
+        "journal.jsonl": "c4e23db0907139debb32ed785bb9336e04e6dd325234a61c4fb67d5c936c21b0"
+      }
+    }
+  ],
+  "controller_metadata": {
+    "scope": "read-only-current-controller-metadata",
+    "session_id": 2,
+    "station": "WinSta0",
+    "desktop": "Default",
+    "station_visible": true,
+    "controller_is_appcontainer": 0,
+    "child_failure": "0xC0000142",
+    "cause": "unproven; no security policy changed"
+  },
+  "risk_reviews": [
+    {
+      "path": ".local/verification/r1-astra-windows-risk-1.md",
+      "sha256": "69504547c5af96520d4dde1b8f244ba09afcc17ba704afd760533aa2073d0ff8"
+    },
+    {
+      "path": ".local/verification/r1-astra-windows-risk-2.md",
+      "sha256": "2d01ea97c3e556e9eb78080f29700dde30e2f6e4119cd2f05523c1241c3ff125"
+    }
+  ]
+}

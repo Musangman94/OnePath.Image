@@ -325,6 +325,13 @@ class WindowsJob:
         if not self._api.AssignProcessToJobObject(self.value, process.value):
             raise NativeProcessError("JOB_ASSIGNMENT_FAILED", process.pid)
 
+    def _creation_attributes(self) -> tuple[tuple[int, Any], ...]:
+        """Trusted adapter extension; values stay alive through process creation."""
+        return ()
+
+    def _verify_before_resume(self, process: ProcessHandle) -> None:
+        """Trusted adapter checks run after Job membership, before any child code."""
+
     def spawn(
         self, executable: Path, args: tuple[str, ...], *, cwd: Path,
         environment: dict[str, str], stdin_fd: int, stdout_fd: int, stderr_fd: int,
@@ -357,6 +364,8 @@ class WindowsJob:
         # Inheritable duplicates exist only during this locked, whitelist-only spawn.
         with _SPAWN_LOCK:
             try:
+                extra_attributes = self._creation_attributes()
+                attribute_count = 1 + len(extra_attributes)
                 current = self._api.GetCurrentProcess()
                 for descriptor in (stdin_fd, stdout_fd, stderr_fd):
                     duplicate = w.HANDLE()
@@ -367,11 +376,11 @@ class WindowsJob:
                         raise NativeProcessError("STDIO_DUPLICATE_FAILED")
                     duplicated.append(duplicate.value)
                 size = ctypes.c_size_t()
-                self._api.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
+                self._api.InitializeProcThreadAttributeList(None, attribute_count, 0, ctypes.byref(size))
                 if not 0 < size.value <= 65_536:
                     raise NativeProcessError("PROCESS_ATTRIBUTES_INVALID")
                 attribute_buffer = ctypes.create_string_buffer(size.value)
-                if not self._api.InitializeProcThreadAttributeList(attribute_buffer, 1, 0, ctypes.byref(size)):
+                if not self._api.InitializeProcThreadAttributeList(attribute_buffer, attribute_count, 0, ctypes.byref(size)):
                     raise NativeProcessError("PROCESS_ATTRIBUTES_FAILED")
                 attribute_initialized = True
                 handles = (w.HANDLE * len(duplicated))(*duplicated)
@@ -380,6 +389,12 @@ class WindowsJob:
                     handles, ctypes.sizeof(handles), None, None,
                 ):
                     raise NativeProcessError("HANDLE_WHITELIST_FAILED")
+                for attribute, value in extra_attributes:
+                    if not self._api.UpdateProcThreadAttribute(
+                        attribute_buffer, 0, attribute, ctypes.byref(value),
+                        ctypes.sizeof(value), None, None,
+                    ):
+                        raise NativeProcessError("PROCESS_SECURITY_ATTRIBUTE_FAILED")
                 startup = _StartupInfoEx()
                 startup.startup.cb = ctypes.sizeof(startup)
                 startup.startup.flags = 0x100  # STARTF_USESTDHANDLES
@@ -392,12 +407,15 @@ class WindowsJob:
                     _CREATE_SUSPENDED | _CREATE_UNICODE_ENVIRONMENT | _CREATE_NO_WINDOW | _EXTENDED_STARTUPINFO_PRESENT,
                     env_buffer, str(cwd), ctypes.byref(startup), ctypes.byref(info),
                 ):
-                    raise NativeProcessError("PROCESS_CREATE_FAILED")
+                    error = NativeProcessError("PROCESS_CREATE_FAILED")
+                    error.native_error = ctypes.get_last_error()
+                    raise error
                 process = ProcessHandle(info.process, info.pid, created=True)
                 self._assign(process)
                 if not self.contains(process):
                     raise NativeProcessError("JOB_MEMBERSHIP_INVALID", process.pid)
-                if self._api.ResumeThread(info.thread) == 0xFFFFFFFF:
+                self._verify_before_resume(process)
+                if self._api.ResumeThread(info.thread) != 1:
                     raise NativeProcessError("PROCESS_RESUME_FAILED", process.pid)
                 resumed = True
                 return process
